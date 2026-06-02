@@ -35,10 +35,61 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .topbar-btn:hover{background:var(--surface2)}
 .topbar-btn.primary{background:var(--text);color:white;border-color:var(--text)}
 .topbar-btn.primary:hover{opacity:0.88}
+.topbar-nav{display:flex;gap:2px;margin-left:12px;background:var(--surface2);border-radius:20px;padding:3px}
+.nav-btn{padding:5px 14px;border-radius:18px;border:none;background:transparent;font-size:12px;font-family:var(--font);font-weight:500;cursor:pointer;color:var(--text-2)}
+.nav-btn.active{background:var(--text);color:white}
+.nav-btn:hover:not(.active){color:var(--text)}
 
 /* VIEWS */
-#view-list{display:block}
+#view-dashboard{display:block}
+#view-list{display:none}
 #view-client{display:none}
+
+/* DASHBOARD */
+.dash-main{max-width:1100px;margin:0 auto;padding:28px 24px 48px}
+.dash-header{margin-bottom:20px}
+.dash-title{font-size:22px;font-weight:500;letter-spacing:-0.3px;margin-bottom:4px}
+.dash-sub{font-size:12px;color:var(--text-3);text-transform:capitalize}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+.chart-title{font-size:13px;font-weight:500;margin-bottom:4px}
+.chart-sub{font-size:11px;color:var(--text-3);margin-bottom:14px;line-height:1.5}
+.chart-canvas{position:relative;height:200px}
+
+/* COHORT TABLE */
+.cohort-card{padding:18px 18px 14px}
+.cohort-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}
+.cohort-table th{font-weight:500;font-size:10px;text-transform:uppercase;letter-spacing:0.6px;color:var(--text-3);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);background:var(--surface2)}
+.cohort-table th:not(:first-child){text-align:center}
+.cohort-table td{padding:8px 10px;text-align:center;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:12px;color:var(--text-2)}
+.cohort-table td.cohort-label{font-family:var(--font);color:var(--text);text-align:left;text-transform:capitalize;font-weight:500}
+.cohort-table td.cohort-count{font-weight:500;color:var(--text)}
+.cohort-table td.cohort-cell{color:var(--text-3)}
+.cohort-table td.cohort-cell.has-val{background:rgba(45,106,79,0.08);color:var(--text)}
+.cohort-table td.cohort-churn{color:var(--text-3)}
+.cohort-table td.cohort-churn.has-val{background:rgba(139,26,26,0.10);color:var(--red);font-weight:500}
+.cohort-table td.cohort-mrr{color:var(--text);text-align:right}
+.cohort-table th.cohort-churn-col{color:var(--red)}
+.cohort-table tr.cohort-totals td{font-weight:500;color:var(--text);border-top:2px solid var(--border-strong);border-bottom:none;background:var(--surface2)}
+.cohort-table tr:hover td:not(.cohort-label){background:rgba(0,0,0,0.02)}
+
+/* ALERTS */
+.alert-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:6px;cursor:pointer;transition:border-color 0.15s;background:var(--surface)}
+.alert-row:hover{border-color:var(--border-strong)}
+.alert-info{flex:1;min-width:0}
+.alert-name{font-size:13px;font-weight:500}
+.alert-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:3px}
+.alert-tag{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:500}
+.alert-tag-red{background:var(--red-bg);color:var(--red)}
+.alert-tag-amber{background:var(--amber-bg);color:var(--amber)}
+
+/* Responsive */
+@media (max-width:780px){
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+  .charts-grid{grid-template-columns:1fr}
+  .topbar-nav{margin-left:6px}
+}
 
 /* LIST VIEW */
 .main{max-width:960px;margin:0 auto;padding:32px 24px}
@@ -54,6 +105,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .client-list{display:flex;flex-direction:column;gap:8px}
 .client-row{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:border-color 0.15s,box-shadow 0.15s}
 .client-row:hover{border-color:var(--border-strong);box-shadow:0 2px 8px rgba(0,0,0,0.05)}
+.client-row-inactive{opacity:0.55}
+.status-tag{font-size:10px;padding:1px 8px;border-radius:20px;font-weight:500;margin-left:6px;vertical-align:middle}
+.status-churned{background:var(--red-bg);color:var(--red)}
+.status-paused{background:var(--surface2);color:var(--text-2);border:1px solid var(--border)}
 .avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex-shrink:0}
 .row-info{flex:1;min-width:0}
 .row-name{font-size:14px;font-weight:500}

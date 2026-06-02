@@ -18,14 +18,18 @@ function openClientModal(id=null){
   document.getElementById('mc-done').value=cl?(cl.done||[]).join('\n'):'';
   document.getElementById('mc-nota').value=cl?cl.nota:'';
   document.getElementById('mc-depo').value=cl?cl.depoimento:'';
+  document.getElementById('mc-status').value=cl?cl.status||'ativo':'ativo';
+  document.getElementById('mc-data-fim').value=cl?cl.dataFim||'':'';
+  toggleDataFim(document.getElementById('mc-status').value);
   document.getElementById('modal-client').classList.add('open');
 }
 function closeClientModal(){document.getElementById('modal-client').classList.remove('open');}
+function toggleDataFim(status){document.getElementById('mc-data-fim-group').style.display=status==='churned'?'block':'none';}
 
 async function saveClient(){
   const nome=document.getElementById('mc-nome').value.trim();
   if(!nome){showToast('Preencha o nome.',true);return;}
-  const cl={id:editingClientId||String(Date.now()),nome,nicho:document.getElementById('mc-nicho').value.trim(),fase:document.getElementById('mc-fase').value,churn:document.getElementById('mc-churn').value,dataInicio:document.getElementById('mc-data-inicio').value,mrr:document.getElementById('mc-mrr').value.trim(),indicador:document.getElementById('mc-indicador').value.trim(),comissaoVal:document.getElementById('mc-comissao-val').value.trim(),comissaoTipo:document.getElementById('mc-comissao-tipo').value,checkpoints:document.getElementById('mc-checkpoints').value.split('\n').map(s=>s.trim()).filter(Boolean),done:document.getElementById('mc-done').value.split('\n').map(s=>s.trim()).filter(Boolean),nota:document.getElementById('mc-nota').value.trim(),depoimento:document.getElementById('mc-depo').value.trim()};
+  const cl={id:editingClientId||String(Date.now()),nome,nicho:document.getElementById('mc-nicho').value.trim(),fase:document.getElementById('mc-fase').value,churn:document.getElementById('mc-churn').value,dataInicio:document.getElementById('mc-data-inicio').value,mrr:document.getElementById('mc-mrr').value.trim(),indicador:document.getElementById('mc-indicador').value.trim(),comissaoVal:document.getElementById('mc-comissao-val').value.trim(),comissaoTipo:document.getElementById('mc-comissao-tipo').value,checkpoints:document.getElementById('mc-checkpoints').value.split('\n').map(s=>s.trim()).filter(Boolean),done:document.getElementById('mc-done').value.split('\n').map(s=>s.trim()).filter(Boolean),nota:document.getElementById('mc-nota').value.trim(),depoimento:document.getElementById('mc-depo').value.trim(),status:document.getElementById('mc-status').value,dataFim:document.getElementById('mc-data-fim').value};
   if(editingClientId){const i=clients.findIndex(c=>c.id===editingClientId);if(i>=0)clients[i]=cl;else clients.push(cl);}else clients.push(cl);
   closeClientModal();renderAll();if(currentClientId===editingClientId)renderClientView(editingClientId);
   setSyncStatus('syncing','Salvando...');

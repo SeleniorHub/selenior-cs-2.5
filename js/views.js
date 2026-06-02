@@ -32,11 +32,24 @@ function fmtTempo(dataInicio){
 
 // ── LIST VIEW ──
 function setFilter(f,btn){activeFilter=f;document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderList();}
-function renderAll(){renderSummary();renderList();}
+function renderAll(){
+  renderSummary();renderList();
+  if(typeof renderDashboard==='function'&&document.getElementById('view-dashboard').style.display!=='none') renderDashboard();
+}
+
+function showMainView(view,btn){
+  if(btn){document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');}
+  currentClientId=null;
+  document.getElementById('view-dashboard').style.display=view==='dashboard'?'block':'none';
+  document.getElementById('view-list').style.display=view==='clientes'?'block':'none';
+  document.getElementById('view-client').style.display='none';
+  if(view==='dashboard'&&typeof renderDashboard==='function') renderDashboard();
+}
 
 function renderSummary(){
-  const total=clients.length;const alto=clients.filter(c=>c.churn==='alto').length;
-  let mrrB=0,mrrL=0;clients.forEach(cl=>{const{bruto,liquido}=calcMRR(cl);mrrB+=bruto;mrrL+=liquido;});
+  const ativos=clients.filter(c=>(c.status||'ativo')==='ativo');
+  const total=ativos.length;const alto=ativos.filter(c=>c.churn==='alto').length;
+  let mrrB=0,mrrL=0;ativos.forEach(cl=>{const{bruto,liquido}=calcMRR(cl);mrrB+=bruto;mrrL+=liquido;});
   document.getElementById('summary-grid').innerHTML=`
     <div class="metric"><div class="metric-label">Clientes ativos</div><div class="metric-value">${total}</div><div class="metric-sub">contratos vigentes</div></div>
     <div class="metric"><div class="metric-label">MRR bruto</div><div class="metric-value">${fmtMoney(mrrB)}</div><div class="metric-sub">receita total mensal</div></div>
@@ -58,10 +71,13 @@ function renderList(){
     const idx=clients.indexOf(cl);const ci=colorFor(idx);
     const{liquido}=calcMRR(cl);const pct=progressPct(cl);
     const aiPendentes=actionItems.filter(a=>a.clienteId===cl.id&&!a.concluido).length;
-    return`<div class="client-row" onclick="openClientView('${cl.id}')">
+    const status=cl.status||'ativo';
+    const inactiveCls=status!=='ativo'?' client-row-inactive':'';
+    const statusBadge=status==='churned'?' <span class="status-tag status-churned">Churned</span>':status==='pausado'?' <span class="status-tag status-paused">Pausado</span>':'';
+    return`<div class="client-row${inactiveCls}" onclick="openClientView('${cl.id}')">
       <div class="avatar" style="background:${ci.bg};color:${ci.txt}">${initials(cl.nome)}</div>
       <div class="row-info">
-        <div class="row-name">${cl.nome}</div>
+        <div class="row-name">${cl.nome}${statusBadge}</div>
         <div class="row-sub">${cl.nicho} · Mês ${calcMesAtual(cl.dataInicio)}/12${cl.dataInicio?' · desde '+new Date(cl.dataInicio).toLocaleDateString('pt-BR',{month:'short',year:'numeric'}):''} · ${cl.done.length}/${cl.checkpoints.length} checkpoints${aiPendentes>0?' · '+aiPendentes+' ação pendente':''}</div>
         <div class="progress-wrap"><div class="progress-fill" style="width:${pct}%"></div></div>
       </div>
@@ -78,6 +94,7 @@ function renderList(){
 // ── CLIENT VIEW ──
 function openClientView(id){
   currentClientId=id;
+  document.getElementById('view-dashboard').style.display='none';
   document.getElementById('view-list').style.display='none';
   document.getElementById('view-client').style.display='block';
   showClientTab('overview',document.querySelector('.ctab'));
@@ -87,7 +104,10 @@ function openClientView(id){
 function goBack(){
   currentClientId=null;
   document.getElementById('view-client').style.display='none';
-  document.getElementById('view-list').style.display='block';
+  const view=document.querySelector('.nav-btn.active')?.dataset.view||'clientes';
+  document.getElementById('view-dashboard').style.display=view==='dashboard'?'block':'none';
+  document.getElementById('view-list').style.display=view==='clientes'?'block':'none';
+  if(view==='dashboard'&&typeof renderDashboard==='function') renderDashboard();
 }
 
 function showClientTab(name,btn){

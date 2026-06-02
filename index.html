@@ -6,7 +6,8 @@
 <title>Selenior CS</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css?v=2.6.0">
+<link rel="stylesheet" href="css/styles.css?v=2.7.0">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.js" defer></script>
 </head>
 <body>
 
@@ -29,6 +30,10 @@
       <span class="topbar-logo">Selenior CS</span>
       <span class="app-version" id="app-version"></span>
       <span class="mode-badge" id="mode-badge"></span>
+      <div class="topbar-nav">
+        <button class="nav-btn active" data-view="dashboard" onclick="showMainView('dashboard',this)">Dashboard</button>
+        <button class="nav-btn" data-view="clientes" onclick="showMainView('clientes',this)">Clientes</button>
+      </div>
       <div class="sync-status">
         <div class="sync-dot" id="sync-dot"></div>
         <span id="sync-label">Aguardando...</span>
@@ -41,8 +46,44 @@
     </div>
   </div>
 
+  <!-- DASHBOARD VIEW -->
+  <div id="view-dashboard">
+    <div class="dash-main">
+      <div class="dash-header">
+        <h2 class="dash-title">Panorama Selenior</h2>
+        <div class="dash-sub" id="dash-sub"></div>
+      </div>
+      <div class="kpi-grid">
+        <div class="metric"><div class="metric-label">Clientes ativos</div><div class="metric-value" id="kpi-ativos">—</div><div class="metric-sub" id="kpi-ativos-sub"></div></div>
+        <div class="metric"><div class="metric-label">MRR bruto</div><div class="metric-value" id="kpi-mrr-bruto">—</div><div class="metric-sub">receita mensal total</div></div>
+        <div class="metric"><div class="metric-label">MRR líquido</div><div class="metric-value" id="kpi-mrr-liquido">—</div><div class="metric-sub" id="kpi-mrr-liquido-sub"></div></div>
+        <div class="metric"><div class="metric-label">Em risco alto</div><div class="metric-value" id="kpi-risco">—</div><div class="metric-sub" id="kpi-risco-sub"></div></div>
+      </div>
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div class="chart-title">Distribuição por fase</div>
+          <div class="chart-canvas"><canvas id="chart-phase"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Action items pendentes por responsável</div>
+          <div class="chart-canvas"><canvas id="chart-resp"></canvas></div>
+        </div>
+      </div>
+      <div class="chart-card cohort-card">
+        <div class="chart-title">Safra de clientes — por mês de entrada</div>
+        <div class="chart-sub">Mostra como cada coorte está distribuída entre as fases hoje. Vermelho indica churn.</div>
+        <div id="cohort-table-wrap"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Sinais de alerta</div>
+        <div class="chart-sub">Clientes que precisam de atenção: risco manual, sem reunião há +30 dias, ou ações vencidas.</div>
+        <div id="alerts-list"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- LIST VIEW -->
-  <div id="view-list">
+  <div id="view-list" style="display:none">
     <div class="main">
       <div class="summary-grid" id="summary-grid"></div>
       <div class="toolbar">
@@ -112,6 +153,12 @@
       <div class="form-group"><label>Risco de churn</label>
         <select id="mc-churn"><option value="baixo">Baixo</option><option value="médio">Médio</option><option value="alto">Alto</option></select>
       </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Status</label>
+        <select id="mc-status" onchange="toggleDataFim(this.value)"><option value="ativo">Ativo</option><option value="pausado">Pausado</option><option value="churned">Churned</option></select>
+      </div>
+      <div class="form-group" id="mc-data-fim-group" style="display:none"><label>Data de saída</label><input id="mc-data-fim" type="date"></div>
     </div>
     <div class="form-row">
       <div class="form-group"><label>Data de início do contrato</label><input id="mc-data-inicio" type="date"></div>
@@ -241,10 +288,11 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="js/config.js?v=2.6.0" defer></script>
-<script src="js/api.js?v=2.6.0" defer></script>
-<script src="js/views.js?v=2.6.0" defer></script>
-<script src="js/modals.js?v=2.6.0" defer></script>
-<script src="js/auth.js?v=2.6.0" defer></script>
+<script src="js/config.js?v=2.7.0" defer></script>
+<script src="js/api.js?v=2.7.0" defer></script>
+<script src="js/views.js?v=2.7.0" defer></script>
+<script src="js/dashboard.js?v=2.7.0" defer></script>
+<script src="js/modals.js?v=2.7.0" defer></script>
+<script src="js/auth.js?v=2.7.0" defer></script>
 </body>
 </html>
