@@ -1,0 +1,237 @@
+// Helpers de UI, formatters e funções de renderização.
+
+function initials(n){return n.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();}
+function colorFor(i){return AVATAR_COLORS[i%AVATAR_COLORS.length];}
+function parseMoney(s){return parseInt((String(s)||'0').replace(/\D/g,''))||0;}
+function fmtMoney(n){if(n>=1000000)return'R$'+(n/1000000).toFixed(1)+'M';if(n>=1000)return'R$'+Math.round(n/1000)+'k';return'R$'+n;}
+function calcMRR(cl){const bruto=parseMoney(cl.mrr);let ded=0;if(cl.comissaoVal){const v=parseFloat(String(cl.comissaoVal).replace(',','.'))||0;ded=cl.comissaoTipo==='pct'?Math.round(bruto*v/100):Math.round(v);}return{bruto,deducao:ded,liquido:bruto-ded};}
+function churnBadge(c){if(c==='alto')return'<span class="badge churn-high">Risco alto</span>';if(c==='médio')return'<span class="badge churn-med">Risco médio</span>';return'<span class="badge churn-low">Risco baixo</span>';}
+function progressPct(cl){if(!cl.checkpoints||!cl.checkpoints.length)return 0;return Math.round((cl.done.length/cl.checkpoints.length)*100);}
+function mesStrip(mes){let h='<div class="mes-strip">';for(let i=1;i<=12;i++)h+=`<div class="mes-dot ${i<mes?'done':i===mes?'cur':''}" title="Mês ${i}"></div>`;return h+'</div>';}
+function ownerTag(r){if(r==='Leo')return'<span class="owner-tag owner-leo">Leo</span>';if(r==='João Pedro')return'<span class="owner-tag owner-joao">João Pedro</span>';return'<span class="owner-tag owner-client">'+r+'</span>';}
+
+function calcMesAtual(dataInicio){
+  if(!dataInicio) return 1;
+  const inicio=new Date(dataInicio);const hoje=new Date();
+  const meses=((hoje.getFullYear()-inicio.getFullYear())*12)+(hoje.getMonth()-inicio.getMonth())+1;
+  return Math.min(Math.max(meses,1),12);
+}
+function fmtTempo(dataInicio){
+  if(!dataInicio) return '';
+  const inicio=new Date(dataInicio);const hoje=new Date();
+  const meses=((hoje.getFullYear()-inicio.getFullYear())*12)+(hoje.getMonth()-inicio.getMonth());
+  if(meses===0) return 'menos de 1 mês';
+  if(meses===1) return '1 mês';
+  if(meses<12) return meses+' meses';
+  const anos=Math.floor(meses/12);const m=meses%12;
+  return anos+'a'+(m>0?' '+m+'m':'');
+}
+
+// ── LIST VIEW ──
+function setFilter(f,btn){activeFilter=f;document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderList();}
+function renderAll(){renderSummary();renderList();}
+
+function renderSummary(){
+  const total=clients.length;const alto=clients.filter(c=>c.churn==='alto').length;
+  let mrrB=0,mrrL=0;clients.forEach(cl=>{const{bruto,liquido}=calcMRR(cl);mrrB+=bruto;mrrL+=liquido;});
+  document.getElementById('summary-grid').innerHTML=`
+    <div class="metric"><div class="metric-label">Clientes ativos</div><div class="metric-value">${total}</div><div class="metric-sub">contratos vigentes</div></div>
+    <div class="metric"><div class="metric-label">MRR bruto</div><div class="metric-value">${fmtMoney(mrrB)}</div><div class="metric-sub">receita total mensal</div></div>
+    <div class="metric"><div class="metric-label">Comissões</div><div class="metric-value" style="color:var(--red)">-${fmtMoney(mrrB-mrrL)}</div><div class="metric-sub">dedução de indicações</div></div>
+    <div class="metric"><div class="metric-label">MRR líquido</div><div class="metric-value" style="color:var(--green)">${fmtMoney(mrrL)}</div><div class="metric-sub">${alto>0?alto+' em risco alto':'tudo ok'}</div></div>`;
+}
+
+function renderList(){
+  const q=(document.getElementById('search-box').value||'').toLowerCase();
+  const filtered=clients.filter(c=>{
+    if(activeFilter==='churn'&&c.churn!=='alto')return false;
+    if(activeFilter!=='todos'&&activeFilter!=='churn'&&c.fase!==activeFilter)return false;
+    if(q&&!c.nome.toLowerCase().includes(q)&&!c.nicho.toLowerCase().includes(q))return false;
+    return true;
+  });
+  const list=document.getElementById('client-list');
+  if(!filtered.length){list.innerHTML='<div class="empty-state">Nenhum cliente encontrado.</div>';return;}
+  list.innerHTML=filtered.map(cl=>{
+    const idx=clients.indexOf(cl);const ci=colorFor(idx);
+    const{liquido}=calcMRR(cl);const pct=progressPct(cl);
+    const aiPendentes=actionItems.filter(a=>a.clienteId===cl.id&&!a.concluido).length;
+    return`<div class="client-row" onclick="openClientView('${cl.id}')">
+      <div class="avatar" style="background:${ci.bg};color:${ci.txt}">${initials(cl.nome)}</div>
+      <div class="row-info">
+        <div class="row-name">${cl.nome}</div>
+        <div class="row-sub">${cl.nicho} · Mês ${calcMesAtual(cl.dataInicio)}/12${cl.dataInicio?' · desde '+new Date(cl.dataInicio).toLocaleDateString('pt-BR',{month:'short',year:'numeric'}):''} · ${cl.done.length}/${cl.checkpoints.length} checkpoints${aiPendentes>0?' · '+aiPendentes+' ação pendente':''}</div>
+        <div class="progress-wrap"><div class="progress-fill" style="width:${pct}%"></div></div>
+      </div>
+      <div class="row-right">
+        <span class="badge mrr-badge">${fmtMoney(liquido)}/mês</span>
+        <span class="badge phase-badge">${cl.fase}</span>
+        ${churnBadge(cl.churn)}
+        <span style="font-size:16px;color:var(--text-3)">›</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── CLIENT VIEW ──
+function openClientView(id){
+  currentClientId=id;
+  document.getElementById('view-list').style.display='none';
+  document.getElementById('view-client').style.display='block';
+  showClientTab('overview',document.querySelector('.ctab'));
+  renderClientView(id);
+}
+
+function goBack(){
+  currentClientId=null;
+  document.getElementById('view-client').style.display='none';
+  document.getElementById('view-list').style.display='block';
+}
+
+function showClientTab(name,btn){
+  document.querySelectorAll('.ctab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  ['overview','reunioes','metas','actions'].forEach(t=>document.getElementById('ctab-'+t).style.display='none');
+  document.getElementById('ctab-'+name).style.display='block';
+}
+
+function renderClientView(id){
+  const cl=clients.find(c=>c.id===id);
+  if(!cl) return;
+  const idx=clients.indexOf(cl);const ci=colorFor(idx);
+  const av=document.getElementById('cv-avatar');
+  av.textContent=initials(cl.nome);av.style.background=ci.bg;av.style.color=ci.txt;
+  document.getElementById('cv-name').textContent=cl.nome;
+  const mesAtualCl=calcMesAtual(cl.dataInicio);document.getElementById('cv-meta').textContent=cl.nicho+' · Mês '+mesAtualCl+'/12'+(cl.dataInicio?' · '+fmtTempo(cl.dataInicio):'');
+  const{bruto,liquido}=calcMRR(cl);
+  document.getElementById('cv-badges').innerHTML=`<span class="badge mrr-badge">${fmtMoney(liquido)}/mês</span><span class="badge phase-badge">${cl.fase}</span>${churnBadge(cl.churn)}`;
+  const acts=document.getElementById('cv-actions');
+  acts.innerHTML=mode==='admin'?`<button class="topbar-btn" onclick="openClientModal('${cl.id}')">Editar</button><button class="topbar-btn" style="color:var(--red)" onclick="deleteClient('${cl.id}')">Remover</button>`:'';
+  renderOverview(cl);renderReunioes(cl);renderMetas(cl);renderActionItems(cl);
+}
+
+function renderOverview(cl){
+  const{bruto,deducao,liquido}=calcMRR(cl);
+  const doneNorm=(cl.done||[]).map(s=>s.trim().toLowerCase());
+  const cpHtml=(cl.checkpoints||[]).map(cp=>{const done=doneNorm.includes(cp.trim().toLowerCase());return`<div class="cp-item"><div class="cp-dot ${done?'cp-done-dot':'cp-todo-dot'}"></div><span class="${done?'cp-done-lbl':''}">${cp}</span></div>`;}).join('');
+  const comissaoInfo=cl.indicador?`<div style="margin-top:8px;font-size:12px;color:var(--text-3)">Indicado por <strong style="color:var(--text-2)">${cl.indicador}</strong>${cl.comissaoVal?' · '+(cl.comissaoTipo==='pct'?cl.comissaoVal+'%':'R$'+cl.comissaoVal):''}</div>`:'';
+  const notaHtml=cl.nota?`<div class="section-gap"><div class="mini-title">Nota interna</div><div class="note-box">${cl.nota}</div></div>`:'';
+  const depoHtml=cl.depoimento?`<div class="section-gap"><div class="mini-title">Depoimento</div><div class="depo-box">"${cl.depoimento}"</div></div>`:'';
+  document.getElementById('ctab-overview').innerHTML=`
+    <div class="overview-grid">
+      <div class="mini-card"><div class="mini-title">Checkpoints (${cl.done.length}/${cl.checkpoints.length})</div>${cpHtml||'<span style="font-size:13px;color:var(--text-3)">Nenhum checkpoint.</span>'}</div>
+      <div class="mini-card"><div class="mini-title">Financeiro</div>
+        <div class="kpi-row">
+          <div class="kpi"><div class="kpi-val">${fmtMoney(bruto)}</div><div class="kpi-lbl">MRR bruto</div></div>
+          ${deducao>0?`<div class="kpi"><div class="kpi-val red">-${fmtMoney(deducao)}</div><div class="kpi-lbl">Comissão</div></div>`:''}
+          <div class="kpi"><div class="kpi-val green">${fmtMoney(liquido)}</div><div class="kpi-lbl">Líquido</div></div>
+        </div>
+        ${comissaoInfo}
+        <div style="margin-top:14px"><div class="mini-title">Progresso no contrato</div>${mesStrip(calcMesAtual(cl.dataInicio))}${cl.dataInicio?'<div style="font-size:11px;color:var(--text-3);margin-top:6px">desde '+new Date(cl.dataInicio).toLocaleDateString('pt-BR')+' · '+fmtTempo(cl.dataInicio)+'</div>':''}</div>
+      </div>
+    </div>
+    ${notaHtml}${depoHtml}`;
+}
+
+function renderReunioes(cl){
+  const clReunioes=reunioes.filter(r=>r.clienteId===cl.id).sort((a,b)=>new Date(b.data)-new Date(a.data));
+  const byWeek={};
+  clReunioes.forEach(r=>{
+    const d=new Date(r.data);const monday=new Date(d);monday.setDate(d.getDate()-d.getDay()+1);
+    const key=monday.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});
+    if(!byWeek[key])byWeek[key]=[];byWeek[key].push(r);
+  });
+  const adminBtn=mode==='admin'?`<button class="edit-btn" onclick="openReuniaoModal('${cl.id}')">+ Adicionar reunião</button>`:'';
+  let html='';
+  if(Object.keys(byWeek).length===0){html='<div class="empty-state">Nenhuma reunião registrada ainda.</div>';}
+  else{
+    Object.entries(byWeek).forEach(([week,rs])=>{
+      html+=`<div class="semana-block"><div class="semana-label">Semana de ${week}</div>`;
+      rs.forEach(r=>{
+        const ais=actionItems.filter(a=>a.reuniaoId===r.id);
+        const chips=[r.participantes,ais.length>0?ais.length+' action items':''].filter(Boolean).map(c=>`<span class="chip">${c}</span>`).join('');
+        html+=`<div class="reuniao-card" onclick="openPopup('${r.id}')">
+          <div class="reuniao-icon" style="font-size:16px">📋</div>
+          <div class="reuniao-info">
+            <div class="reuniao-title">${r.titulo}</div>
+            <div class="reuniao-sub">${new Date(r.data).toLocaleDateString('pt-BR')}${r.duracao?' · '+r.duracao:''}</div>
+            <div class="chip-row">${chips}</div>
+          </div><span style="font-size:18px;color:var(--text-3);margin-left:8px">›</span>
+        </div>`;
+      });
+      html+='</div>';
+    });
+  }
+  document.getElementById('ctab-reunioes').innerHTML=html+adminBtn;
+}
+
+function renderMetas(cl){
+  const clMetas=metas.filter(m=>m.clienteId===cl.id);
+  const clObjs=objetivos.filter(o=>o.clienteId===cl.id);
+  const adminBtns=mode==='admin'?`<div style="display:flex;gap:8px;margin-bottom:16px"><button class="edit-btn" onclick="openMetaModal('${cl.id}')">+ Meta</button><button class="edit-btn" onclick="openObjModal('${cl.id}')">+ Objetivo</button></div>`:'';
+  let metasHtml='';
+  if(clMetas.length===0){metasHtml='<div class="empty-state" style="padding:24px">Nenhuma meta cadastrada.</div>';}
+  else{
+    const byMes={};
+    clMetas.forEach(m=>{if(!byMes[m.mes])byMes[m.mes]=[];byMes[m.mes].push(m);});
+    Object.entries(byMes).forEach(([mes,ms])=>{
+      metasHtml+=`<div class="mini-title" style="margin-bottom:10px">${mes}</div><div class="metas-grid">`;
+      ms.forEach(m=>{
+        const pct=m.total>0?Math.min(100,Math.round((m.progresso/m.total)*100)):0;
+        const stCls=m.status==='Concluído'?'ms-ok':m.status==='Em progresso'?'ms-prog':'ms-none';
+        const fillCls=m.status==='Concluído'?'':'amber';
+        const rmBtn=mode==='admin'?`<button onclick="deleteMeta('${m.id}')" style="background:transparent;border:none;cursor:pointer;color:var(--text-3);font-size:11px;margin-left:4px">✕</button>`:'';
+        metasHtml+=`<div class="meta-card">
+          <div class="meta-header"><span class="meta-title">${m.titulo}</span><div style="display:flex;align-items:center"><span class="meta-status ${stCls}">${m.status}</span>${rmBtn}</div></div>
+          <div class="prog-bar"><div class="prog-fill ${fillCls}" style="width:${pct}%"></div></div>
+          <div class="meta-sub">${m.progresso} de ${m.total}${m.unidade?' '+m.unidade:''}</div>
+        </div>`;
+      });
+      metasHtml+='</div>';
+    });
+  }
+  let objsHtml='';
+  if(clObjs.length>0){
+    objsHtml=`<div class="mini-title" style="margin-bottom:10px;margin-top:20px">Objetivos gerais</div>`;
+    clObjs.forEach(o=>{
+      const rmBtn=mode==='admin'?`<button onclick="deleteObj('${o.id}')" style="background:transparent;border:none;cursor:pointer;color:var(--text-3);font-size:11px;margin-left:auto">✕</button>`:'';
+      objsHtml+=`<div class="obj-item"><div class="obj-icon">🎯</div><div class="obj-text">${o.texto}<div class="obj-sub">${o.icone||''}</div></div>${rmBtn}</div>`;
+    });
+  }
+  document.getElementById('ctab-metas').innerHTML=adminBtns+metasHtml+objsHtml;
+}
+
+function renderActionItems(cl){
+  const pending=actionItems.filter(a=>a.clienteId===cl.id&&!a.concluido);
+  const done=actionItems.filter(a=>a.clienteId===cl.id&&a.concluido);
+  const adminBtn=mode==='admin'?`<button class="edit-btn" onclick="openAIModal('${cl.id}')">+ Action item</button>`:'';
+  function aiHtml(a){
+    const checkEl=mode==='admin'?`<div class="ai-check ${a.concluido?'done':''}" onclick="toggleAI('${a.id}')">${a.concluido?'✓':''}</div>`:`<div class="ai-check ${a.concluido?'done':''}">${a.concluido?'✓':''}</div>`;
+    const rmBtn=mode==='admin'?`<button onclick="deleteAI('${a.id}')" style="background:transparent;border:none;cursor:pointer;color:var(--text-3);font-size:11px">✕</button>`:'';
+    return`<div class="ai-item">${checkEl}<div class="ai-info"><div class="ai-text ${a.concluido?'done':''}">${a.texto}</div><div class="ai-meta">${a.prazo||'Sem prazo'}${a.reuniaoId&&a.reuniaoId!=='undefined'?' · reunião vinculada':''}</div></div>${ownerTag(a.responsavel)}${rmBtn}</div>`;
+  }
+  let html=adminBtn;
+  if(pending.length>0){html+=`<div class="ai-section-title" style="margin-top:16px">Pendentes (${pending.length})</div>`+pending.map(aiHtml).join('');}
+  if(done.length>0){html+=`<div class="ai-section-title" style="margin-top:16px">Concluídos</div>`+done.map(aiHtml).join('');}
+  if(pending.length===0&&done.length===0){html+='<div class="empty-state">Nenhum action item ainda.</div>';}
+  document.getElementById('ctab-actions').innerHTML=html;
+}
+
+// ── POPUP REUNIÃO ──
+function openPopup(reuniaoId){
+  const r=reunioes.find(x=>x.id===reuniaoId);if(!r)return;
+  const ais=actionItems.filter(a=>a.reuniaoId===reuniaoId);
+  const pontosHtml=(r.pontos||[]).map(p=>`<div class="popup-bullet"><div class="bullet-dot bullet-blue"></div><span>${p}</span></div>`).join('');
+  const aisHtml=ais.map(a=>`<div class="popup-bullet"><div class="bullet-dot bullet-green"></div><span><strong style="font-weight:500">${a.responsavel}</strong> — ${a.texto}</span></div>`).join('');
+  document.getElementById('popup-content').innerHTML=`
+    <div class="popup-header">
+      <div><div class="popup-title">${r.titulo}</div><div class="popup-sub">${new Date(r.data).toLocaleDateString('pt-BR')}${r.duracao?' · '+r.duracao:''}${r.participantes?' · '+r.participantes:''}</div></div>
+      <button class="popup-close" onclick="closePopup()">✕</button>
+    </div>
+    <div class="popup-body">
+      ${r.resumo?`<div class="popup-section"><div class="popup-section-title">Resumo</div><div class="popup-text">${r.resumo}</div></div>`:''}
+      ${pontosHtml?`<div class="popup-section"><div class="popup-section-title">Pontos discutidos</div>${pontosHtml}</div>`:''}
+      ${aisHtml?`<div class="popup-section"><div class="popup-section-title">Action items</div>${aisHtml}</div>`:''}
+    </div>`;
+  document.getElementById('popup-overlay').classList.add('show');
+}
+function closePopup(){document.getElementById('popup-overlay').classList.remove('show');}

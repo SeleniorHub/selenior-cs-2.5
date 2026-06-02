@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Selenior CS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css?v=2.5.0">
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">Selenior</div>
+    <h2>CS Dashboard</h2>
+    <p>Entre com sua senha. Admin pode editar; visualização é somente leitura.</p>
+    <div class="login-error" id="login-error">Senha incorreta.</div>
+    <input class="login-input" type="password" id="pwd-input" placeholder="Senha">
+    <button class="login-btn" id="login-btn" onclick="tryLogin()">Entrar</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-left">
+      <span class="topbar-logo">Selenior CS</span>
+      <span class="app-version" id="app-version"></span>
+      <span class="mode-badge" id="mode-badge"></span>
+      <div class="sync-status">
+        <div class="sync-dot" id="sync-dot"></div>
+        <span id="sync-label">Aguardando...</span>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <button class="topbar-btn" onclick="loadData()">↻ Atualizar</button>
+      <button class="topbar-btn primary" id="add-btn-top" onclick="openClientModal()" style="display:none">+ Novo cliente</button>
+      <button class="topbar-btn" onclick="logout()">Sair</button>
+    </div>
+  </div>
+
+  <!-- LIST VIEW -->
+  <div id="view-list">
+    <div class="main">
+      <div class="summary-grid" id="summary-grid"></div>
+      <div class="toolbar">
+        <button class="filter-btn active" onclick="setFilter('todos',this)">Todos</button>
+        <button class="filter-btn" onclick="setFilter('Onboarding',this)">Onboarding</button>
+        <button class="filter-btn" onclick="setFilter('Otimização',this)">Otimização</button>
+        <button class="filter-btn" onclick="setFilter('Escala',this)">Escala</button>
+        <button class="filter-btn" onclick="setFilter('Consolidação',this)">Consolidação</button>
+        <button class="filter-btn" onclick="setFilter('Aceleração',this)">Aceleração</button>
+        <button class="filter-btn" onclick="setFilter('churn',this)">⚠ Risco alto</button>
+        <input class="search-box" type="text" placeholder="Buscar..." id="search-box" oninput="renderList()">
+      </div>
+      <div class="client-list" id="client-list"></div>
+      <button class="add-row-btn" id="add-row-btn" onclick="openClientModal()" style="display:none">+ Adicionar cliente</button>
+    </div>
+  </div>
+
+  <!-- CLIENT VIEW -->
+  <div id="view-client" style="display:none">
+    <div class="client-topbar">
+      <button class="back-btn" onclick="goBack()">← Clientes</button>
+      <div class="client-header-info">
+        <div class="avatar" id="cv-avatar" style="width:36px;height:36px"></div>
+        <div>
+          <div class="client-name-lg" id="cv-name"></div>
+          <div class="client-meta-sm" id="cv-meta"></div>
+        </div>
+        <div class="header-badges" id="cv-badges"></div>
+      </div>
+      <div style="display:flex;gap:8px" id="cv-actions"></div>
+    </div>
+    <div class="client-tabs">
+      <div class="ctab active" onclick="showClientTab('overview',this)">Visão geral</div>
+      <div class="ctab" onclick="showClientTab('reunioes',this)">Reuniões</div>
+      <div class="ctab" onclick="showClientTab('metas',this)">Metas & Objetivos</div>
+      <div class="ctab" onclick="showClientTab('actions',this)">Action items</div>
+    </div>
+    <div class="client-content">
+      <div id="ctab-overview"></div>
+      <div id="ctab-reunioes" style="display:none"></div>
+      <div id="ctab-metas" style="display:none"></div>
+      <div id="ctab-actions" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+<!-- POPUP REUNIÃO -->
+<div class="popup-overlay" id="popup-overlay" onclick="if(event.target===this)closePopup()">
+  <div class="popup" id="popup-content"></div>
+</div>
+
+<!-- MODAL CLIENTE -->
+<div class="modal-overlay" id="modal-client" onclick="if(event.target===this)closeClientModal()">
+  <div class="modal">
+    <h3 id="mc-title">Novo cliente</h3>
+    <div class="modal-section">Informações gerais</div>
+    <div class="form-row">
+      <div class="form-group"><label>Nome</label><input id="mc-nome" type="text"></div>
+      <div class="form-group"><label>Nicho</label><input id="mc-nicho" type="text"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Fase</label>
+        <select id="mc-fase"><option>Onboarding</option><option>Otimização</option><option>Escala</option><option>Consolidação</option><option>Aceleração</option></select>
+      </div>
+      <div class="form-group"><label>Risco de churn</label>
+        <select id="mc-churn"><option value="baixo">Baixo</option><option value="médio">Médio</option><option value="alto">Alto</option></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Data de início do contrato</label><input id="mc-data-inicio" type="date"></div>
+      <div class="form-group"><label>Valor mensal (R$)</label><input id="mc-mrr" type="text"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Indicado por</label><input id="mc-indicador" type="text"></div>
+      <div class="form-group"><label>Comissão</label><input id="mc-comissao-val" type="text" placeholder="Ex: 10"></div>
+    </div>
+    <div class="form-group"><label>Tipo de comissão</label>
+      <select id="mc-comissao-tipo"><option value="pct">Porcentagem (%)</option><option value="fixo">Valor fixo (R$)</option></select>
+    </div>
+    <div class="modal-section">Checkpoints</div>
+    <div class="form-group"><label>Checkpoints (um por linha)</label><textarea id="mc-checkpoints"></textarea></div>
+    <div class="form-group"><label>Concluídos (um por linha)</label><textarea id="mc-done"></textarea></div>
+    <div class="modal-section">Observações</div>
+    <div class="form-group"><label>Nota interna</label><textarea id="mc-nota"></textarea></div>
+    <div class="form-group"><label>Depoimento</label><textarea id="mc-depo"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeClientModal()">Cancelar</button>
+      <button class="btn-save" onclick="saveClient()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL REUNIÃO -->
+<div class="modal-overlay" id="modal-reuniao" onclick="if(event.target===this)closeReuniaoModal()">
+  <div class="modal">
+    <h3 id="mr-title">Nova reunião</h3>
+    <div class="form-row">
+      <div class="form-group"><label>Título</label><input id="mr-titulo" type="text" placeholder="Ex: Check-in mensal"></div>
+      <div class="form-group"><label>Data</label><input id="mr-data" type="date"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Duração</label><input id="mr-duracao" type="text" placeholder="Ex: 1h"></div>
+      <div class="form-group"><label>Participantes</label><input id="mr-participantes" type="text" placeholder="Ex: João + Cliente"></div>
+    </div>
+    <div class="form-group"><label>Resumo</label><textarea id="mr-resumo" placeholder="Resumo geral da reunião..."></textarea></div>
+    <div class="form-group"><label>Pontos discutidos (um por linha)</label><textarea id="mr-pontos" placeholder="Ponto 1&#10;Ponto 2"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeReuniaoModal()">Cancelar</button>
+      <button class="btn-save" onclick="saveReuniao()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL META -->
+<div class="modal-overlay" id="modal-meta" onclick="if(event.target===this)closeMetaModal()">
+  <div class="modal">
+    <h3 id="mm-title">Nova meta</h3>
+    <div class="form-group"><label>Título</label><input id="mm-titulo" type="text" placeholder="Ex: Volume de passagens"></div>
+    <div class="form-row">
+      <div class="form-group"><label>Mês (ex: Junho/2026)</label><input id="mm-mes" type="text"></div>
+      <div class="form-group"><label>Status</label>
+        <select id="mm-status"><option value="Não iniciado">Não iniciado</option><option value="Em progresso">Em progresso</option><option value="Concluído">Concluído</option></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Progresso atual</label><input id="mm-progresso" type="number" value="0"></div>
+      <div class="form-group"><label>Total / Meta</label><input id="mm-total" type="number" value="100"></div>
+    </div>
+    <div class="form-group"><label>Unidade (ex: passagens, contatos, R$)</label><input id="mm-unidade" type="text"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeMetaModal()">Cancelar</button>
+      <button class="btn-save" onclick="saveMeta()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL OBJETIVO -->
+<div class="modal-overlay" id="modal-obj" onclick="if(event.target===this)closeObjModal()">
+  <div class="modal">
+    <h3>Novo objetivo</h3>
+    <div class="form-group"><label>Descrição</label><textarea id="mo-texto" placeholder="Ex: Aumentar volume de passagens antes de elevar ticket médio"></textarea></div>
+    <div class="form-group"><label>Contexto (opcional)</label><input id="mo-icone" type="text" placeholder="Ex: Estratégia definida pelo cliente"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeObjModal()">Cancelar</button>
+      <button class="btn-save" onclick="saveObj()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ACTION ITEM -->
+<div class="modal-overlay" id="modal-ai" onclick="if(event.target===this)closeAIModal()">
+  <div class="modal">
+    <h3>Novo action item</h3>
+    <div class="form-group"><label>Descrição</label><textarea id="ai-texto" placeholder="Descreva a ação..."></textarea></div>
+    <div class="form-row">
+      <div class="form-group"><label>Responsável</label>
+        <select id="ai-resp"><option value="Leo">Leo</option><option value="João Pedro">João Pedro</option><option value="Cliente">Cliente</option></select>
+      </div>
+      <div class="form-group"><label>Prazo (opcional)</label><input id="ai-prazo" type="text" placeholder="Ex: Até quinta"></div>
+    </div>
+    <div class="form-group"><label>Reunião vinculada (opcional)</label><select id="ai-reuniao"><option value="">Nenhuma</option></select></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeAIModal()">Cancelar</button>
+      <button class="btn-save" onclick="saveAI()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="js/config.js?v=2.5.0" defer></script>
+<script src="js/api.js?v=2.5.0" defer></script>
+<script src="js/views.js?v=2.5.0" defer></script>
+<script src="js/modals.js?v=2.5.0" defer></script>
+<script src="js/auth.js?v=2.5.0" defer></script>
+</body>
+</html>
