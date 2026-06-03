@@ -34,7 +34,11 @@ function fmtTempo(dataInicio){
 function setFilter(f,btn){activeFilter=f;document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderList();}
 function renderAll(){
   renderSummary();renderList();
-  if(typeof renderDashboard==='function'&&document.getElementById('view-dashboard').style.display!=='none') renderDashboard();
+  if(document.getElementById('view-dashboard').style.display==='none') return;
+  const panoramaVisible=document.getElementById('dash-panorama')?.style.display!=='none';
+  const actionsVisible=document.getElementById('dash-actions')?.style.display!=='none';
+  if(panoramaVisible&&typeof renderDashboard==='function') renderDashboard();
+  if(actionsVisible&&typeof renderActionsPage==='function') renderActionsPage();
 }
 
 function showMainView(view,btn){
@@ -231,7 +235,8 @@ function renderActionItems(cl){
     const checkEl=mode==='admin'?`<div class="ai-check ${a.concluido?'done':''}" onclick="toggleAI('${a.id}')">${a.concluido?'✓':''}</div>`:`<div class="ai-check ${a.concluido?'done':''}">${a.concluido?'✓':''}</div>`;
     const rmBtn=mode==='admin'?`<button onclick="deleteAI('${a.id}')" style="background:transparent;border:none;cursor:pointer;color:var(--text-3);font-size:11px">✕</button>`:'';
     const resolvedResp=a.responsavel==='Cliente'?(clients.find(c=>c.id===a.clienteId)?.nome||'Cliente'):a.responsavel;
-    return`<div class="ai-item">${checkEl}<div class="ai-info"><div class="ai-text ${a.concluido?'done':''}">${a.texto}</div><div class="ai-meta">${a.prazo||'Sem prazo'}${a.reuniaoId&&a.reuniaoId!=='undefined'?' · reunião vinculada':''}</div></div>${ownerTag(resolvedResp)}${rmBtn}</div>`;
+    const prazoDisplay=a.dataPrazo?new Date(a.dataPrazo).toLocaleDateString('pt-BR'):(a.prazo||'Sem prazo');
+    return`<div class="ai-item">${checkEl}<div class="ai-info"><div class="ai-text ${a.concluido?'done':''}">${a.texto}</div><div class="ai-meta">${prazoDisplay}${a.reuniaoId&&a.reuniaoId!=='undefined'?' · reunião vinculada':''}</div></div>${ownerTag(resolvedResp)}${rmBtn}</div>`;
   }
   let html=adminBtn;
   if(pending.length>0){html+=`<div class="ai-section-title" style="margin-top:16px">Pendentes (${pending.length})</div>`+pending.map(aiHtml).join('');}

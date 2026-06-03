@@ -6,7 +6,7 @@
 <title>Selenior CS</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css?v=2.7.1">
+<link rel="stylesheet" href="css/styles.css?v=2.8.0">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.js" defer></script>
 </head>
 <body>
@@ -48,7 +48,11 @@
 
   <!-- DASHBOARD VIEW -->
   <div id="view-dashboard">
-    <div class="dash-main">
+    <div class="dash-tabs">
+      <button class="dash-tab active" data-dtab="panorama" onclick="showDashTab('panorama',this)">Panorama</button>
+      <button class="dash-tab" data-dtab="actions" onclick="showDashTab('actions',this)">Action items</button>
+    </div>
+    <div class="dash-main" id="dash-panorama">
       <div class="dash-header">
         <h2 class="dash-title">Panorama Selenior</h2>
         <div class="dash-sub" id="dash-sub"></div>
@@ -79,6 +83,23 @@
         <div class="chart-sub">Clientes que precisam de atenção: risco manual, sem reunião há +30 dias, ou ações vencidas.</div>
         <div id="alerts-list"></div>
       </div>
+    </div>
+    <div class="dash-main" id="dash-actions" style="display:none">
+      <div class="dash-header">
+        <h2 class="dash-title">Action items</h2>
+        <div class="dash-sub">Sua agenda do dia a dia</div>
+      </div>
+      <div class="actions-toolbar">
+        <button class="filter-btn active" data-aresp="todos" onclick="setActionsFilter('todos',this)">Todos</button>
+        <button class="filter-btn" data-aresp="Leo" onclick="setActionsFilter('Leo',this)">Leo</button>
+        <button class="filter-btn" data-aresp="João Pedro" onclick="setActionsFilter('João Pedro',this)">João Pedro</button>
+        <button class="filter-btn" data-aresp="Cliente" onclick="setActionsFilter('Cliente',this)">Clientes</button>
+        <label class="actions-toggle">
+          <input type="checkbox" id="show-done" onchange="renderActionsPage()">
+          <span>Mostrar concluídos</span>
+        </label>
+      </div>
+      <div id="actions-list"></div>
     </div>
   </div>
 
@@ -250,7 +271,7 @@
       <div class="form-group"><label>Responsável</label>
         <select id="ai-resp"><option value="Leo">Leo</option><option value="João Pedro">João Pedro</option><option value="Cliente">Cliente</option></select>
       </div>
-      <div class="form-group"><label>Prazo (opcional)</label><input id="ai-prazo" type="text" placeholder="Ex: Até quinta"></div>
+      <div class="form-group"><label>Data prazo (opcional)</label><input id="ai-data-prazo" type="date"></div>
     </div>
     <div class="form-group"><label>Reunião vinculada (opcional)</label><select id="ai-reuniao"><option value="">Nenhuma</option></select></div>
     <div class="modal-actions">
@@ -288,11 +309,11 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="js/config.js?v=2.7.1" defer></script>
-<script src="js/api.js?v=2.7.1" defer></script>
-<script src="js/views.js?v=2.7.1" defer></script>
-<script src="js/dashboard.js?v=2.7.1" defer></script>
-<script src="js/modals.js?v=2.7.1" defer></script>
-<script src="js/auth.js?v=2.7.1" defer></script>
+<script src="js/config.js?v=2.8.0" defer></script>
+<script src="js/api.js?v=2.8.0" defer></script>
+<script src="js/views.js?v=2.8.0" defer></script>
+<script src="js/dashboard.js?v=2.8.0" defer></script>
+<script src="js/modals.js?v=2.8.0" defer></script>
+<script src="js/auth.js?v=2.8.0" defer></script>
 </body>
 </html>

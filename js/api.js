@@ -72,9 +72,9 @@ function rowToMeta(r){return{id:String(r[0]),clienteId:String(r[1]),mes:r[2]||''
 function objToRow(o){return[o.id,o.clienteId,o.texto,o.icone||''];}
 function rowToObj(r){return{id:String(r[0]),clienteId:String(r[1]),texto:r[2]||'',icone:r[3]||''};}
 
-// Mappers — ActionItems: id|clienteId|reuniaoId|texto|responsavel|prazo|concluido
-function aiToRow(a){return[a.id,a.clienteId,a.reuniaoId||'',a.texto,a.responsavel||'',a.prazo||'',a.concluido?'1':'0'];}
-function rowToAI(r){return{id:String(r[0]),clienteId:String(r[1]),reuniaoId:String(r[2]||''),texto:r[3]||'',responsavel:r[4]||'',prazo:r[5]||'',concluido:String(r[6])==='1'};}
+// Mappers — ActionItems: id|clienteId|reuniaoId|texto|responsavel|prazo|concluido|dataPrazo
+function aiToRow(a){return[a.id,a.clienteId,a.reuniaoId||'',a.texto,a.responsavel||'',a.prazo||'',a.concluido?'1':'0',a.dataPrazo||''];}
+function rowToAI(r){return{id:String(r[0]),clienteId:String(r[1]),reuniaoId:String(r[2]||''),texto:r[3]||'',responsavel:r[4]||'',prazo:r[5]||'',concluido:String(r[6])==='1',dataPrazo:r[7]||''};}
 
 // Mappers — Documentos: id|clienteId|tipo|nome|driveFileId|url|tamanho|uploadedAt
 function docToRow(d){return[d.id,d.clienteId,d.tipo||'outro',d.nome,d.driveFileId||'',d.url||'',d.tamanho||0,d.uploadedAt||''];}

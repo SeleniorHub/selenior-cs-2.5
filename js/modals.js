@@ -116,7 +116,7 @@ async function deleteObj(id){
 // ── MODAL ACTION ITEM ──
 function openAIModal(clienteId){
   document.getElementById('ai-texto').value='';document.getElementById('ai-resp').value='Leo';
-  document.getElementById('ai-prazo').value='';
+  document.getElementById('ai-data-prazo').value='';
   const cl=clients.find(c=>c.id===clienteId);
   const clienteOpt=document.querySelector('#ai-resp option[value="Cliente"]');
   if(clienteOpt) clienteOpt.textContent=cl?cl.nome:'Cliente';
@@ -131,7 +131,7 @@ function closeAIModal(){document.getElementById('modal-ai').classList.remove('op
 async function saveAI(){
   const texto=document.getElementById('ai-texto').value.trim();if(!texto){showToast('Preencha a descrição.',true);return;}
   const clienteId=document.getElementById('modal-ai').dataset.clienteId;
-  const a={id:String(Date.now()),clienteId,reuniaoId:document.getElementById('ai-reuniao').value||'',texto,responsavel:document.getElementById('ai-resp').value,prazo:document.getElementById('ai-prazo').value.trim(),concluido:false};
+  const a={id:String(Date.now()),clienteId,reuniaoId:document.getElementById('ai-reuniao').value||'',texto,responsavel:document.getElementById('ai-resp').value,prazo:'',dataPrazo:document.getElementById('ai-data-prazo').value,concluido:false};
   actionItems.push(a);closeAIModal();renderClientView(clienteId);
   try{await upsertRow('ActionItems',aiToRow(a));showToast('Action item salvo.');setTimeout(loadData,1500);}catch(e){showToast('Erro ao salvar',true);}
 }

@@ -1,6 +1,15 @@
-// Dashboard Selenior — KPIs, gráficos, safra e sinais de alerta.
+// Dashboard Selenior — KPIs, gráficos, safra, sinais de alerta e action items.
 
-let phaseChart=null, respChart=null;
+let phaseChart=null, respChart=null, actionsFilter='todos';
+
+function showDashTab(tab,btn){
+  document.querySelectorAll('.dash-tab').forEach(t=>t.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  document.getElementById('dash-panorama').style.display=tab==='panorama'?'block':'none';
+  document.getElementById('dash-actions').style.display=tab==='actions'?'block':'none';
+  if(tab==='panorama') renderDashboard();
+  if(tab==='actions') renderActionsPage();
+}
 
 function activeClients(){return clients.filter(c=>(c.status||'ativo')==='ativo');}
 
@@ -202,4 +211,88 @@ function openSafraPopup(monthKey,category){
     +'</div>'
     +'<div class="popup-body">'+(items||'<div class="empty-state">Sem clientes nesta categoria.</div>')+'</div>';
   document.getElementById('popup-overlay').classList.add('show');
+}
+
+// ── ACTION ITEMS (Dashboard) ──
+function setActionsFilter(f,btn){
+  actionsFilter=f;
+  document.querySelectorAll('#dash-actions .filter-btn').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  renderActionsPage();
+}
+
+function renderActionsPage(){
+  const showDone=document.getElementById('show-done')?.checked||false;
+  let items=actionItems.filter(a=>{
+    if(actionsFilter!=='todos'&&a.responsavel!==actionsFilter) return false;
+    if(!showDone&&a.concluido) return false;
+    return true;
+  });
+  const today=new Date();today.setHours(0,0,0,0);
+  const tomorrow=new Date(today);tomorrow.setDate(tomorrow.getDate()+1);
+  const weekEnd=new Date(today);weekEnd.setDate(weekEnd.getDate()+7);
+  const buckets={atrasados:[],hoje:[],amanha:[],semana:[],futuro:[],semData:[],concluidos:[]};
+  items.forEach(a=>{
+    if(a.concluido){buckets.concluidos.push(a);return;}
+    if(!a.dataPrazo){buckets.semData.push(a);return;}
+    const dp=new Date(a.dataPrazo);dp.setHours(0,0,0,0);
+    if(dp<today) buckets.atrasados.push(a);
+    else if(dp.getTime()===today.getTime()) buckets.hoje.push(a);
+    else if(dp.getTime()===tomorrow.getTime()) buckets.amanha.push(a);
+    else if(dp<weekEnd) buckets.semana.push(a);
+    else buckets.futuro.push(a);
+  });
+  ['atrasados','hoje','amanha','semana','futuro'].forEach(k=>{
+    buckets[k].sort((a,b)=>new Date(a.dataPrazo)-new Date(b.dataPrazo));
+  });
+  const sections=[
+    ['atrasados','Atrasados','overdue'],
+    ['hoje','Hoje','today'],
+    ['amanha','Amanhã',''],
+    ['semana','Esta semana',''],
+    ['futuro','Próximos',''],
+    ['semData','Sem prazo','']
+  ];
+  if(showDone) sections.push(['concluidos','Concluídos','done']);
+  let html='';
+  sections.forEach(([key,label,cls])=>{
+    const arr=buckets[key];
+    if(arr.length===0) return;
+    html+='<div class="actions-section">'
+      +'<div class="actions-section-title '+cls+'">'+label+' <span class="actions-count">'+arr.length+'</span></div>'
+      +arr.map(renderActionRow).join('')
+      +'</div>';
+  });
+  if(!html) html='<div class="empty-state">Nenhum action item nessas condições.</div>';
+  document.getElementById('actions-list').innerHTML=html;
+}
+
+function renderActionRow(a){
+  const cl=clients.find(c=>c.id===a.clienteId);
+  const clienteNome=cl?cl.nome:'—';
+  const resp=a.responsavel==='Cliente'?clienteNome:a.responsavel;
+  let dataLabel='',dataCls='';
+  if(a.dataPrazo){
+    const dp=new Date(a.dataPrazo);const today=new Date();today.setHours(0,0,0,0);dp.setHours(0,0,0,0);
+    const diff=Math.round((dp-today)/(1000*60*60*24));
+    if(diff<0){dataLabel=Math.abs(diff)+'d atrás';dataCls='date-overdue';}
+    else if(diff===0){dataLabel='Hoje';dataCls='date-today';}
+    else if(diff===1){dataLabel='Amanhã';dataCls='date-soon';}
+    else{dataLabel=dp.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}).replace('.','');}
+  }
+  const check=mode==='admin'
+    ?`<div class="ai-check ${a.concluido?'done':''}" onclick="event.stopPropagation();toggleAI('${a.id}')">${a.concluido?'✓':''}</div>`
+    :`<div class="ai-check ${a.concluido?'done':''}">${a.concluido?'✓':''}</div>`;
+  const idx=cl?clients.indexOf(cl):0;
+  const ci=colorFor(idx);
+  const avatarMini=cl?`<div class="avatar-mini" style="background:${ci.bg};color:${ci.txt}" title="${cl.nome}">${initials(cl.nome)}</div>`:'';
+  return `<div class="actions-row" onclick="openClientView('${a.clienteId}')">
+    ${check}
+    <div class="actions-info">
+      <div class="actions-text ${a.concluido?'done':''}">${a.texto}</div>
+      <div class="actions-meta">${avatarMini}<span class="actions-cliente">${clienteNome}</span></div>
+    </div>
+    ${ownerTag(resp)}
+    ${dataLabel?`<span class="actions-date ${dataCls}">${dataLabel}</span>`:'<span class="actions-date date-none">—</span>'}
+  </div>`;
 }
