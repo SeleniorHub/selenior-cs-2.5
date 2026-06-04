@@ -245,7 +245,7 @@ function renderActionItems(cl){
     const rmBtn=mode==='admin'?`<button onclick="deleteAI('${a.id}')" style="background:transparent;border:none;cursor:pointer;color:var(--text-3);font-size:11px">✕</button>`:'';
     const resolvedResp=a.responsavel==='Cliente'?(clients.find(c=>c.id===a.clienteId)?.nome||'Cliente'):a.responsavel;
     const prazoDisplay=a.dataPrazo?new Date(a.dataPrazo).toLocaleDateString('pt-BR'):(a.prazo||'Sem prazo');
-    return`<div class="ai-item">${checkEl}<div class="ai-info"><div class="ai-text ${a.concluido?'done':''}">${a.texto}</div><div class="ai-meta">${prazoDisplay}${a.reuniaoId&&a.reuniaoId!=='undefined'?' · reunião vinculada':''}</div></div>${ownerTag(resolvedResp)}${rmBtn}</div>`;
+    return`<div class="ai-item">${checkEl}<div class="ai-info"><div class="ai-text ${a.concluido?'done':''}" style="white-space:pre-wrap">${a.texto}</div><div class="ai-meta">${prazoDisplay}${a.reuniaoId&&a.reuniaoId!=='undefined'?' · reunião vinculada':''}</div></div>${ownerTag(resolvedResp)}${rmBtn}</div>`;
   }
   let html=adminBtn;
   if(pending.length>0){html+=`<div class="ai-section-title" style="margin-top:16px">Pendentes (${pending.length})</div>`+pending.map(aiHtml).join('');}
