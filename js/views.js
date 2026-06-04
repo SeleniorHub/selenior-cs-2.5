@@ -30,6 +30,46 @@ function fmtTempo(dataInicio){
   return anos+'a'+(m>0?' '+m+'m':'');
 }
 
+// ── HEALTH SCORE ──
+function calcHealthScore(cl){
+  const now=new Date();const today=new Date(now);today.setHours(0,0,0,0);
+  // Frequência de reuniões (30%)
+  const clReunioes=reunioes.filter(r=>r.clienteId===cl.id);
+  let meetScore=100;
+  if(clReunioes.length===0){
+    const daysSinceStart=cl.dataInicio?Math.floor((now-new Date(cl.dataInicio))/(1000*60*60*24)):0;
+    meetScore=daysSinceStart>15?0:100;
+  }else{
+    const latest=clReunioes.reduce((mx,r)=>new Date(r.data)>new Date(mx.data)?r:mx);
+    const days=Math.floor((now-new Date(latest.data))/(1000*60*60*24));
+    meetScore=days<=30?100:days<=60?50:0;
+  }
+  // Progresso de checkpoints (25%)
+  const totalCp=(cl.checkpoints||[]).length;
+  const doneCp=(cl.done||[]).length;
+  const cpScore=totalCp>0?Math.round((doneCp/totalCp)*100):100;
+  // Action items vencidos (25%)
+  const overdue=actionItems.filter(a=>a.clienteId===cl.id&&!a.concluido&&a.dataPrazo&&new Date(a.dataPrazo)<today).length;
+  const aiScore=overdue===0?100:overdue<=2?60:0;
+  // Risco manual (20%)
+  const churnScore=cl.churn==='baixo'?100:cl.churn==='médio'?50:0;
+  return Math.round(meetScore*0.30+cpScore*0.25+aiScore*0.25+churnScore*0.20);
+}
+function healthLabel(score){
+  if(score>=71)return{cls:'health-green',label:'Saudável'};
+  if(score>=31)return{cls:'health-amber',label:'Atenção'};
+  return{cls:'health-red',label:'Risco'};
+}
+function openClientViewTab(id,tab){
+  openClientView(id);
+  setTimeout(()=>{
+    const tabMap={overview:0,reunioes:1,metas:2,actions:3,documentos:4};
+    const tabs=document.querySelectorAll('.ctab');
+    const btn=tabs[tabMap[tab]];
+    if(btn) showClientTab(tab,btn);
+  },60);
+}
+
 // ── LIST VIEW ──
 function setFilter(f,btn){activeFilter=f;document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderList();}
 function renderAll(){
@@ -89,6 +129,8 @@ function renderList(){
     const status=cl.status||'ativo';
     const inactiveCls=status!=='ativo'?' client-row-inactive':'';
     const statusBadge=status==='churned'?' <span class="status-tag status-churned">Churned</span>':status==='pausado'?' <span class="status-tag status-paused">Pausado</span>':'';
+    const hs=status==='ativo'?calcHealthScore(cl):null;
+    const hl=hs!==null?healthLabel(hs):null;
     return`<div class="client-row${inactiveCls}" onclick="openClientView('${cl.id}')">
       <div class="avatar" style="background:${ci.bg};color:${ci.txt}">${initials(cl.nome)}</div>
       <div class="row-info">
@@ -100,6 +142,7 @@ function renderList(){
         <span class="badge mrr-badge">${fmtMoney(liquido)}/mês</span>
         <span class="badge phase-badge">${cl.fase}</span>
         ${churnBadge(cl.churn)}
+        ${hl?`<span class="health-badge ${hl.cls}">${hs}</span>`:''}
         <span style="font-size:16px;color:var(--text-3)">›</span>
       </div>
     </div>`;
@@ -143,7 +186,8 @@ function renderClientView(id){
   document.getElementById('cv-name').textContent=cl.nome;
   const mesAtualCl=calcMesAtual(cl.dataInicio);document.getElementById('cv-meta').textContent=cl.nicho+' · Mês '+mesAtualCl+'/12'+(cl.dataInicio?' · '+fmtTempo(cl.dataInicio):'');
   const{bruto,liquido}=calcMRR(cl);
-  document.getElementById('cv-badges').innerHTML=`<span class="badge mrr-badge">${fmtMoney(liquido)}/mês</span><span class="badge phase-badge">${cl.fase}</span>${churnBadge(cl.churn)}`;
+  const hs=calcHealthScore(cl);const hl=healthLabel(hs);
+  document.getElementById('cv-badges').innerHTML=`<span class="badge mrr-badge">${fmtMoney(liquido)}/mês</span><span class="badge phase-badge">${cl.fase}</span>${churnBadge(cl.churn)}<span class="health-badge ${hl.cls}">${hl.label} · ${hs}</span>`;
   const acts=document.getElementById('cv-actions');
   acts.innerHTML=mode==='admin'?`<button class="topbar-btn" onclick="openClientModal('${cl.id}')">Editar</button><button class="topbar-btn" style="color:var(--red)" onclick="deleteClient('${cl.id}')">Remover</button>`:'';
   renderOverview(cl);renderReunioes(cl);renderMetas(cl);renderActionItems(cl);renderDocumentos(cl);

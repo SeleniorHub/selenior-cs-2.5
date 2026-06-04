@@ -178,38 +178,52 @@ function renderCohortTable(){
 
 function renderAlerts(){
   const ativos=activeClients();
-  const now=new Date();
+  const now=new Date();const today=new Date(now);today.setHours(0,0,0,0);
   const LIMIT_DAYS=30;
   const alerts=[];
   ativos.forEach(cl=>{
-    const reasons=[];
-    if(cl.churn==='alto') reasons.push({label:'Risco alto',cls:'alert-tag-red'});
+    const reasons=[];let needsMeeting=false,hasOverdueAI=false;
+    if(cl.churn==='alto'){reasons.push({label:'Risco alto',cls:'alert-tag-red'});needsMeeting=true;}
     const clMeetings=reunioes.filter(r=>r.clienteId===cl.id);
     if(clMeetings.length===0){
       if(cl.dataInicio){
         const daysSinceStart=Math.floor((now-new Date(cl.dataInicio))/(1000*60*60*24));
-        if(daysSinceStart>15) reasons.push({label:'Sem reuniões registradas',cls:'alert-tag-amber'});
+        if(daysSinceStart>15){reasons.push({label:'Sem reuniões registradas',cls:'alert-tag-amber'});needsMeeting=true;}
       }
     }else{
       const latest=clMeetings.reduce((max,m)=>new Date(m.data)>new Date(max.data)?m:max);
       const days=Math.floor((now-new Date(latest.data))/(1000*60*60*24));
-      if(days>LIMIT_DAYS) reasons.push({label:days+' dias sem reunião',cls:'alert-tag-amber'});
+      if(days>LIMIT_DAYS){reasons.push({label:days+' dias sem reunião',cls:'alert-tag-amber'});needsMeeting=true;}
     }
-    if(reasons.length) alerts.push({cl,reasons});
+    const overdue=actionItems.filter(a=>a.clienteId===cl.id&&!a.concluido&&a.dataPrazo&&new Date(a.dataPrazo)<today).length;
+    if(overdue>0){
+      reasons.push({label:overdue+' ação'+(overdue>1?'ões':'')+(overdue>1?' vencidas':' vencida'),cls:'alert-tag-red'});
+      hasOverdueAI=true;
+    }
+    if(reasons.length) alerts.push({cl,reasons,needsMeeting,hasOverdueAI});
   });
   const wrap=document.getElementById('alerts-list');
-  if(!alerts.length){
-    wrap.innerHTML='<div class="empty-state">Nenhum sinal de alerta. ✓</div>';
-    return;
-  }
-  alerts.sort((a,b)=>b.reasons.length-a.reasons.length);
-  wrap.innerHTML=alerts.map(({cl,reasons})=>{
+  if(!alerts.length){wrap.innerHTML='<div class="empty-state">Nenhum sinal de alerta. ✓</div>';return;}
+  alerts.sort((a,b)=>{
+    const hsA=calcHealthScore(a.cl),hsB=calcHealthScore(b.cl);
+    if(b.reasons.length!==a.reasons.length) return b.reasons.length-a.reasons.length;
+    return hsA-hsB;
+  });
+  wrap.innerHTML=alerts.map(({cl,reasons,needsMeeting,hasOverdueAI})=>{
     const idx=clients.indexOf(cl);const ci=colorFor(idx);
-    const tags=reasons.map(r=>'<span class="alert-tag '+r.cls+'">'+r.label+'</span>').join('');
+    const hs=calcHealthScore(cl);const hl=healthLabel(hs);
+    const tags=reasons.map(r=>'<span class="alert-tag '+r.cls+'">'+r.label+'</span>').join('')
+      +'<span class="health-badge '+hl.cls+'" style="margin-left:4px">'+hs+'</span>';
+    let actionBtns='';
+    if(mode==='admin'){
+      if(needsMeeting) actionBtns+=`<button class="alert-action-btn" onclick="event.stopPropagation();openReuniaoModal('${cl.id}')">+ Reunião</button>`;
+      if(hasOverdueAI) actionBtns+=`<button class="alert-action-btn" onclick="event.stopPropagation();openClientViewTab('${cl.id}','actions')">Ver ações</button>`;
+    }
     return '<div class="alert-row" onclick="openClientView(\''+cl.id+'\')">'
       +'<div class="avatar" style="background:'+ci.bg+';color:'+ci.txt+'">'+initials(cl.nome)+'</div>'
       +'<div class="alert-info"><div class="alert-name">'+cl.nome+'</div><div class="alert-tags">'+tags+'</div></div>'
-      +'<span style="font-size:16px;color:var(--text-3)">›</span></div>';
+      +(actionBtns?'<div class="alert-actions">'+actionBtns+'</div>':'')
+      +'</div>';
   }).join('');
 }
 
