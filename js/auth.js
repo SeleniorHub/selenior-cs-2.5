@@ -36,13 +36,16 @@ function loadSession(){
 
 function enterApp(initialData){
   document.getElementById('login-screen').style.display='none';
-  document.getElementById('app').style.display='block';
+  const app=document.getElementById('app');
+  app.style.display='flex';
+  app.classList.add('open');
   const badge=document.getElementById('mode-badge');
   badge.textContent=mode==='admin'?'Admin':'Visualização';
   badge.className='mode-badge '+(mode==='admin'?'mode-admin':'mode-view');
   const isAdmin=mode==='admin';
-  document.getElementById('add-btn-top').style.display=isAdmin?'inline-flex':'none';
+  document.getElementById('add-btn-top').style.display='none';
   document.getElementById('add-row-btn').style.display=isAdmin?'flex':'none';
+  document.getElementById('topbar-context').textContent='Panorama';
   if(initialData){applyData(initialData);setSyncStatus('ok','Atualizado às '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}));}
   else loadData();
   if(mode==='viewer')setInterval(loadData,60000);
@@ -51,7 +54,9 @@ function enterApp(initialData){
 function logout(){
   mode=null;authHash=null;
   localStorage.removeItem(SESSION_KEY);
-  document.getElementById('app').style.display='none';
+  const app=document.getElementById('app');
+  app.style.display='none';
+  app.classList.remove('open');
   document.getElementById('login-screen').style.display='flex';
   document.getElementById('pwd-input').value='';
 }

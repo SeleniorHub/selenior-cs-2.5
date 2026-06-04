@@ -34,20 +34,27 @@ function fmtTempo(dataInicio){
 function setFilter(f,btn){activeFilter=f;document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderList();}
 function renderAll(){
   renderSummary();renderList();
-  if(document.getElementById('view-dashboard').style.display==='none') return;
-  const panoramaVisible=document.getElementById('dash-panorama')?.style.display!=='none';
-  const actionsVisible=document.getElementById('dash-actions')?.style.display!=='none';
-  if(panoramaVisible&&typeof renderDashboard==='function') renderDashboard();
+  const dashVisible=document.getElementById('view-dashboard')?.style.display!=='none';
+  const actionsVisible=document.getElementById('view-actions')?.style.display!=='none';
+  if(dashVisible&&typeof renderDashboard==='function') renderDashboard();
   if(actionsVisible&&typeof renderActionsPage==='function') renderActionsPage();
 }
 
+const VIEW_TITLES={dashboard:'Panorama',actions:'Action items',clientes:'Clientes'};
+
 function showMainView(view,btn){
-  if(btn){document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');}
+  if(btn){document.querySelectorAll('.side-nav-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');}
+  else{document.querySelectorAll('.side-nav-btn').forEach(b=>{b.classList.toggle('active',b.dataset.view===view);});}
   currentClientId=null;
   document.getElementById('view-dashboard').style.display=view==='dashboard'?'block':'none';
+  document.getElementById('view-actions').style.display=view==='actions'?'block':'none';
   document.getElementById('view-list').style.display=view==='clientes'?'block':'none';
   document.getElementById('view-client').style.display='none';
+  document.getElementById('topbar-context').textContent=VIEW_TITLES[view]||'';
+  const isAdmin=mode==='admin';
+  document.getElementById('add-btn-top').style.display=(isAdmin&&view==='clientes')?'inline-flex':'none';
   if(view==='dashboard'&&typeof renderDashboard==='function') renderDashboard();
+  if(view==='actions'&&typeof renderActionsPage==='function') renderActionsPage();
 }
 
 function renderSummary(){
@@ -99,8 +106,12 @@ function renderList(){
 function openClientView(id){
   currentClientId=id;
   document.getElementById('view-dashboard').style.display='none';
+  document.getElementById('view-actions').style.display='none';
   document.getElementById('view-list').style.display='none';
   document.getElementById('view-client').style.display='block';
+  const cl=clients.find(c=>c.id===id);
+  document.getElementById('topbar-context').textContent=cl?cl.nome:'Cliente';
+  document.getElementById('add-btn-top').style.display='none';
   showClientTab('overview',document.querySelector('.ctab'));
   renderClientView(id);
 }
@@ -108,10 +119,8 @@ function openClientView(id){
 function goBack(){
   currentClientId=null;
   document.getElementById('view-client').style.display='none';
-  const view=document.querySelector('.nav-btn.active')?.dataset.view||'clientes';
-  document.getElementById('view-dashboard').style.display=view==='dashboard'?'block':'none';
-  document.getElementById('view-list').style.display=view==='clientes'?'block':'none';
-  if(view==='dashboard'&&typeof renderDashboard==='function') renderDashboard();
+  const view=document.querySelector('.side-nav-btn.active')?.dataset.view||'clientes';
+  showMainView(view,null);
 }
 
 function showClientTab(name,btn){

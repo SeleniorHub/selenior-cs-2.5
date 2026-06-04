@@ -4,9 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Selenior CS</title>
+<link rel="icon" type="image/png" href="assets/favicon.png?v=2.9.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css?v=2.8.0">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css?v=2.9.0">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.js" defer></script>
 </head>
 <body>
@@ -14,47 +15,73 @@
 <!-- LOGIN -->
 <div id="login-screen">
   <div class="login-card">
-    <div class="login-logo">Selenior</div>
-    <h2>CS Dashboard</h2>
-    <p>Entre com sua senha. Admin pode editar; visualização é somente leitura.</p>
+    <img src="assets/logo-dark.png?v=2.9.0" alt="Selenior" class="login-brand">
+    <div class="login-tag">CS Dashboard</div>
+    <h2>Bem-vindo</h2>
+    <p>Entre com sua senha. Admin tem permissão de edição; visualização é somente leitura.</p>
     <div class="login-error" id="login-error">Senha incorreta.</div>
-    <input class="login-input" type="password" id="pwd-input" placeholder="Senha">
+    <input class="login-input" type="password" id="pwd-input" placeholder="Senha de acesso">
     <button class="login-btn" id="login-btn" onclick="tryLogin()">Entrar</button>
   </div>
 </div>
 
 <!-- APP -->
 <div id="app">
-  <div class="topbar">
-    <div class="topbar-left">
-      <span class="topbar-logo">Selenior CS</span>
-      <span class="app-version" id="app-version"></span>
-      <span class="mode-badge" id="mode-badge"></span>
-      <div class="topbar-nav">
-        <button class="nav-btn active" data-view="dashboard" onclick="showMainView('dashboard',this)">Dashboard</button>
-        <button class="nav-btn" data-view="clientes" onclick="showMainView('clientes',this)">Clientes</button>
-      </div>
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <img src="assets/logo-dark.png?v=2.9.0" alt="Selenior" class="sidebar-logo">
+      <span class="sidebar-tag">CS</span>
+    </div>
+    <nav class="sidebar-nav">
+      <button class="side-nav-btn active" data-view="dashboard" onclick="showMainView('dashboard',this)">
+        <svg class="side-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+        <span>Panorama</span>
+      </button>
+      <button class="side-nav-btn" data-view="actions" onclick="showMainView('actions',this)">
+        <svg class="side-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 7-7"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        <span>Action items</span>
+      </button>
+      <button class="side-nav-btn" data-view="clientes" onclick="showMainView('clientes',this)">
+        <svg class="side-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span>Clientes</span>
+      </button>
+    </nav>
+    <div class="sidebar-footer">
       <div class="sync-status">
         <div class="sync-dot" id="sync-dot"></div>
         <span id="sync-label">Aguardando...</span>
       </div>
+      <div class="sidebar-user">
+        <span class="mode-badge" id="mode-badge"></span>
+        <button class="sidebar-logout" onclick="logout()" title="Sair">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </button>
+      </div>
+      <div class="app-version" id="app-version"></div>
     </div>
-    <div class="topbar-right">
-      <button class="topbar-btn" onclick="loadData()">↻ Atualizar</button>
-      <button class="topbar-btn primary" id="add-btn-top" onclick="openClientModal()" style="display:none">+ Novo cliente</button>
-      <button class="topbar-btn" onclick="logout()">Sair</button>
-    </div>
-  </div>
+  </aside>
 
-  <!-- DASHBOARD VIEW -->
+  <div class="app-main">
+    <header class="topbar">
+      <div class="topbar-left">
+        <h1 class="topbar-context" id="topbar-context">Panorama</h1>
+      </div>
+      <div class="topbar-right">
+        <button class="topbar-btn" onclick="loadData()" title="Sincronizar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/></svg>
+          <span>Atualizar</span>
+        </button>
+        <button class="topbar-btn primary" id="add-btn-top" onclick="openClientModal()" style="display:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span>Novo cliente</span>
+        </button>
+      </div>
+    </header>
+
+  <!-- DASHBOARD VIEW (Panorama) -->
   <div id="view-dashboard">
-    <div class="dash-tabs">
-      <button class="dash-tab active" data-dtab="panorama" onclick="showDashTab('panorama',this)">Panorama</button>
-      <button class="dash-tab" data-dtab="actions" onclick="showDashTab('actions',this)">Action items</button>
-    </div>
-    <div class="dash-main" id="dash-panorama">
+    <div class="dash-main">
       <div class="dash-header">
-        <h2 class="dash-title">Panorama Selenior</h2>
         <div class="dash-sub" id="dash-sub"></div>
       </div>
       <div class="kpi-grid">
@@ -84,9 +111,12 @@
         <div id="alerts-list"></div>
       </div>
     </div>
-    <div class="dash-main" id="dash-actions" style="display:none">
+  </div>
+
+  <!-- ACTION ITEMS VIEW -->
+  <div id="view-actions" style="display:none">
+    <div class="dash-main">
       <div class="dash-header">
-        <h2 class="dash-title">Action items</h2>
         <div class="dash-sub">Sua agenda do dia a dia</div>
       </div>
       <div class="actions-toolbar">
@@ -150,6 +180,7 @@
       <div id="ctab-actions" style="display:none"></div>
       <div id="ctab-documentos" style="display:none"></div>
     </div>
+  </div>
   </div>
 </div>
 
@@ -309,11 +340,11 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="js/config.js?v=2.8.0" defer></script>
-<script src="js/api.js?v=2.8.0" defer></script>
-<script src="js/views.js?v=2.8.0" defer></script>
-<script src="js/dashboard.js?v=2.8.0" defer></script>
-<script src="js/modals.js?v=2.8.0" defer></script>
-<script src="js/auth.js?v=2.8.0" defer></script>
+<script src="js/config.js?v=2.9.0" defer></script>
+<script src="js/api.js?v=2.9.0" defer></script>
+<script src="js/views.js?v=2.9.0" defer></script>
+<script src="js/dashboard.js?v=2.9.0" defer></script>
+<script src="js/modals.js?v=2.9.0" defer></script>
+<script src="js/auth.js?v=2.9.0" defer></script>
 </body>
 </html>

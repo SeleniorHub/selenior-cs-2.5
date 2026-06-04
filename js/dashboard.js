@@ -2,15 +2,6 @@
 
 let phaseChart=null, respChart=null, actionsFilter='todos';
 
-function showDashTab(tab,btn){
-  document.querySelectorAll('.dash-tab').forEach(t=>t.classList.remove('active'));
-  if(btn) btn.classList.add('active');
-  document.getElementById('dash-panorama').style.display=tab==='panorama'?'block':'none';
-  document.getElementById('dash-actions').style.display=tab==='actions'?'block':'none';
-  if(tab==='panorama') renderDashboard();
-  if(tab==='actions') renderActionsPage();
-}
-
 function activeClients(){return clients.filter(c=>(c.status||'ativo')==='ativo');}
 
 function renderDashboard(){
@@ -45,7 +36,7 @@ function renderKPIs(){
   document.getElementById('kpi-risco-sub').textContent=ativos.length?pctRisco+'% da base ativa':'';
 }
 
-const FASE_COLORS={Onboarding:'#1A3A5C','Otimização':'#7B5E00',Escala:'#2D6A4F','Consolidação':'#3D2B69','Aceleração':'#0F7C5E'};
+const FASE_COLORS={Onboarding:'#17395D','Otimização':'#876A0E',Escala:'#2D6A4F','Consolidação':'#6E5A51','Aceleração':'#375560'};
 const FASES=['Onboarding','Otimização','Escala','Consolidação','Aceleração'];
 
 function renderPhaseChart(){
@@ -62,7 +53,8 @@ function renderPhaseChart(){
     options:{
       responsive:true,maintainAspectRatio:false,cutout:'62%',
       plugins:{
-        legend:{position:'right',labels:{font:{family:'DM Sans',size:11},color:'#6B6A66',padding:10,boxWidth:10,boxHeight:10}}
+        legend:{position:'right',labels:{font:{family:'DM Sans',size:11.5},color:'#5A6873',padding:12,boxWidth:10,boxHeight:10,usePointStyle:true,pointStyle:'circle'}},
+        tooltip:{backgroundColor:'#1A232B',titleFont:{family:'DM Sans',size:12},bodyFont:{family:'DM Sans',size:12},padding:10,cornerRadius:8,displayColors:false}
       }
     }
   });
@@ -70,7 +62,7 @@ function renderPhaseChart(){
 
 function renderRespChart(){
   const labels=['Leo','João Pedro','Clientes'];
-  const colors=['#1A3A5C','#3D2B69','#2D6A4F'];
+  const colors=['#17395D','#6E5A51','#2D6A4F'];
   const keys=['Leo','João Pedro','Cliente'];
   const counts=keys.map(r=>actionItems.filter(a=>!a.concluido&&a.responsavel===r).length);
   const ctx=document.getElementById('chart-resp');
@@ -81,10 +73,10 @@ function renderRespChart(){
     data:{labels,datasets:[{data:counts,backgroundColor:colors,borderRadius:6,maxBarThickness:32}]},
     options:{
       responsive:true,maintainAspectRatio:false,indexAxis:'y',
-      plugins:{legend:{display:false},tooltip:{displayColors:false}},
+      plugins:{legend:{display:false},tooltip:{backgroundColor:'#1A232B',titleFont:{family:'DM Sans',size:12},bodyFont:{family:'DM Sans',size:12},padding:10,cornerRadius:8,displayColors:false}},
       scales:{
-        x:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{color:'#6B6A66',font:{family:'DM Sans',size:11},precision:0}},
-        y:{grid:{display:false},ticks:{color:'#1A1917',font:{family:'DM Sans',size:12}}}
+        x:{grid:{color:'rgba(26,35,43,0.06)'},border:{display:false},ticks:{color:'#5A6873',font:{family:'DM Sans',size:11.5},precision:0}},
+        y:{grid:{display:false},border:{display:false},ticks:{color:'#1A232B',font:{family:'DM Sans',size:12,weight:'500'}}}
       }
     }
   });
@@ -216,7 +208,7 @@ function openSafraPopup(monthKey,category){
 // ── ACTION ITEMS (Dashboard) ──
 function setActionsFilter(f,btn){
   actionsFilter=f;
-  document.querySelectorAll('#dash-actions .filter-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('#view-actions .filter-btn').forEach(b=>b.classList.remove('active'));
   if(btn) btn.classList.add('active');
   renderActionsPage();
 }
