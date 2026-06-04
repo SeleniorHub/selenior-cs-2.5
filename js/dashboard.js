@@ -328,6 +328,7 @@ function renderActionRow(a){
   const idx=cl?clients.indexOf(cl):0;
   const ci=colorFor(idx);
   const avatarMini=cl?`<div class="avatar-mini" style="background:${ci.bg};color:${ci.txt}" title="${cl.nome}">${initials(cl.nome)}</div>`:'';
+  const editBtn=mode==='admin'?`<button onclick="event.stopPropagation();openAIModalEdit('${a.id}')" style="background:transparent;border:none;cursor:pointer;color:var(--text-3);font-size:12px;padding:2px 6px;flex-shrink:0" title="Editar">✎</button>`:'';
   return `<div class="actions-row" onclick="openClientView('${a.clienteId}')">
     ${check}
     <div class="actions-info">
@@ -335,6 +336,7 @@ function renderActionRow(a){
       <div class="actions-meta">${avatarMini}<span class="actions-cliente">${clienteNome}</span></div>
     </div>
     ${ownerTag(resp)}
+    ${editBtn}
     ${dataLabel?`<span class="actions-date ${dataCls}">${dataLabel}</span>`:'<span class="actions-date date-none">—</span>'}
   </div>`;
 }

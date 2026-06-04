@@ -220,9 +220,10 @@ function renderMetas(cl){
         const pct=m.total>0?Math.min(100,Math.round((m.progresso/m.total)*100)):0;
         const stCls=m.status==='Concluído'?'ms-ok':m.status==='Em progresso'?'ms-prog':'ms-none';
         const fillCls=m.status==='Concluído'?'':'amber';
+        const editBtn=mode==='admin'?`<button onclick="openMetaModalEdit('${m.id}')" style="background:transparent;border:none;cursor:pointer;color:var(--text-3);font-size:12px;padding:2px 5px" title="Editar">✎</button>`:'';
         const rmBtn=mode==='admin'?`<button onclick="deleteMeta('${m.id}')" style="background:transparent;border:none;cursor:pointer;color:var(--text-3);font-size:11px;margin-left:4px">✕</button>`:'';
         metasHtml+=`<div class="meta-card">
-          <div class="meta-header"><span class="meta-title">${m.titulo}</span><div style="display:flex;align-items:center"><span class="meta-status ${stCls}">${m.status}</span>${rmBtn}</div></div>
+          <div class="meta-header"><span class="meta-title">${m.titulo}</span><div style="display:flex;align-items:center"><span class="meta-status ${stCls}">${m.status}</span>${editBtn}${rmBtn}</div></div>
           <div class="prog-bar"><div class="prog-fill ${fillCls}" style="width:${pct}%"></div></div>
           <div class="meta-sub">${m.progresso} de ${m.total}${m.unidade?' '+m.unidade:''}</div>
         </div>`;
@@ -234,8 +235,9 @@ function renderMetas(cl){
   if(clObjs.length>0){
     objsHtml=`<div class="mini-title" style="margin-bottom:10px;margin-top:20px">Objetivos gerais</div>`;
     clObjs.forEach(o=>{
-      const rmBtn=mode==='admin'?`<button onclick="deleteObj('${o.id}')" style="background:transparent;border:none;cursor:pointer;color:var(--text-3);font-size:11px;margin-left:auto">✕</button>`:'';
-      objsHtml+=`<div class="obj-item"><div class="obj-icon">🎯</div><div class="obj-text">${o.texto}<div class="obj-sub">${o.icone||''}</div></div>${rmBtn}</div>`;
+      const editObjBtn=mode==='admin'?`<button onclick="openObjModalEdit('${o.id}')" style="background:transparent;border:none;cursor:pointer;color:var(--text-3);font-size:12px;padding:2px 5px" title="Editar">✎</button>`:'';
+      const rmBtn=mode==='admin'?`<button onclick="deleteObj('${o.id}')" style="background:transparent;border:none;cursor:pointer;color:var(--text-3);font-size:11px;margin-left:4px">✕</button>`:'';
+      objsHtml+=`<div class="obj-item"><div class="obj-icon">🎯</div><div class="obj-text">${o.texto}<div class="obj-sub">${o.icone||''}</div></div><div style="display:flex;align-items:center;margin-left:auto">${editObjBtn}${rmBtn}</div></div>`;
     });
   }
   document.getElementById('ctab-metas').innerHTML=adminBtns+metasHtml+objsHtml;
@@ -247,10 +249,11 @@ function renderActionItems(cl){
   const adminBtn=mode==='admin'?`<button class="edit-btn" onclick="openAIModal('${cl.id}')">+ Action item</button>`:'';
   function aiHtml(a){
     const checkEl=mode==='admin'?`<div class="ai-check ${a.concluido?'done':''}" onclick="toggleAI('${a.id}')">${a.concluido?'✓':''}</div>`:`<div class="ai-check ${a.concluido?'done':''}">${a.concluido?'✓':''}</div>`;
+    const editBtn=mode==='admin'?`<button onclick="openAIModalEdit('${a.id}')" style="background:transparent;border:none;cursor:pointer;color:var(--text-3);font-size:12px;padding:2px 5px" title="Editar">✎</button>`:'';
     const rmBtn=mode==='admin'?`<button onclick="deleteAI('${a.id}')" style="background:transparent;border:none;cursor:pointer;color:var(--text-3);font-size:11px">✕</button>`:'';
     const resolvedResp=a.responsavel==='Cliente'?(clients.find(c=>c.id===a.clienteId)?.nome||'Cliente'):a.responsavel;
     const prazoDisplay=a.dataPrazo?new Date(a.dataPrazo).toLocaleDateString('pt-BR'):(a.prazo||'Sem prazo');
-    return`<div class="ai-item">${checkEl}<div class="ai-info"><div class="ai-text ${a.concluido?'done':''}" style="white-space:pre-wrap">${a.texto}</div><div class="ai-meta">${prazoDisplay}${a.reuniaoId&&a.reuniaoId!=='undefined'?' · reunião vinculada':''}</div></div>${ownerTag(resolvedResp)}${rmBtn}</div>`;
+    return`<div class="ai-item">${checkEl}<div class="ai-info"><div class="ai-text ${a.concluido?'done':''}" style="white-space:pre-wrap">${a.texto}</div><div class="ai-meta">${prazoDisplay}${a.reuniaoId&&a.reuniaoId!=='undefined'?' · reunião vinculada':''}</div></div>${ownerTag(resolvedResp)}${editBtn}${rmBtn}</div>`;
   }
   let html=adminBtn;
   if(pending.length>0){html+=`<div class="ai-section-title" style="margin-top:16px">Pendentes (${pending.length})</div>`+pending.map(aiHtml).join('');}
@@ -271,7 +274,10 @@ function openPopup(reuniaoId){
   document.getElementById('popup-content').innerHTML=`
     <div class="popup-header">
       <div><div class="popup-title">${r.titulo}</div><div class="popup-sub">${new Date(r.data).toLocaleDateString('pt-BR')}${r.duracao?' · '+r.duracao:''}${r.participantes?' · '+r.participantes:''}</div></div>
-      <button class="popup-close" onclick="closePopup()">✕</button>
+      <div style="display:flex;gap:6px;align-items:center">
+        ${mode==='admin'?`<button class="topbar-btn" style="font-size:12px;padding:6px 12px" onclick="closePopup();openReuniaoModalEdit('${r.id}')">Editar</button>`:''}
+        <button class="popup-close" onclick="closePopup()">✕</button>
+      </div>
     </div>
     <div class="popup-body">
       ${r.resumo?`<div class="popup-section"><div class="popup-section-title">Resumo</div><div class="popup-text">${r.resumo}</div></div>`:''}

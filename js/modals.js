@@ -64,7 +64,21 @@ function openReuniaoModal(clienteId=null){
   document.getElementById('modal-reuniao').classList.add('open');
 }
 function openReuniaoModalGlobal(){openReuniaoModal(null);}
-function closeReuniaoModal(){document.getElementById('modal-reuniao').classList.remove('open');}
+function openReuniaoModalEdit(id){
+  const r=reunioes.find(x=>x.id===id);if(!r)return;
+  editingReuniaoId=id;
+  document.getElementById('mr-titulo').value=r.titulo;
+  document.getElementById('mr-data').value=r.data;
+  document.getElementById('mr-duracao').value=r.duracao||'';
+  document.getElementById('mr-participantes').value=r.participantes||'';
+  document.getElementById('mr-resumo').value=r.resumo||'';
+  document.getElementById('mr-pontos').value=(r.pontos||[]).join('\n');
+  document.getElementById('mr-title').textContent='Editar reunião';
+  document.getElementById('mr-title').dataset.clienteId=r.clienteId;
+  document.getElementById('mr-cliente-group').style.display='none';
+  document.getElementById('modal-reuniao').classList.add('open');
+}
+function closeReuniaoModal(){editingReuniaoId=null;document.getElementById('modal-reuniao').classList.remove('open');}
 
 async function saveReuniao(){
   const titulo=document.getElementById('mr-titulo').value.trim();if(!titulo){showToast('Preencha o título.',true);return;}
@@ -88,7 +102,20 @@ function openMetaModal(clienteId){
   document.getElementById('mm-title').dataset.clienteId=clienteId;
   document.getElementById('modal-meta').classList.add('open');
 }
-function closeMetaModal(){document.getElementById('modal-meta').classList.remove('open');}
+function openMetaModalEdit(id){
+  const m=metas.find(x=>x.id===id);if(!m)return;
+  editingMetaId=id;
+  document.getElementById('mm-titulo').value=m.titulo;
+  document.getElementById('mm-mes').value=m.mes||'';
+  document.getElementById('mm-status').value=m.status;
+  document.getElementById('mm-progresso').value=m.progresso;
+  document.getElementById('mm-total').value=m.total;
+  document.getElementById('mm-unidade').value=m.unidade||'';
+  document.getElementById('mm-title').textContent='Editar meta';
+  document.getElementById('mm-title').dataset.clienteId=m.clienteId;
+  document.getElementById('modal-meta').classList.add('open');
+}
+function closeMetaModal(){editingMetaId=null;document.getElementById('modal-meta').classList.remove('open');}
 
 async function saveMeta(){
   const titulo=document.getElementById('mm-titulo').value.trim();if(!titulo){showToast('Preencha o título.',true);return;}
@@ -107,18 +134,31 @@ async function deleteMeta(id){
 
 // ── MODAL OBJETIVO ──
 function openObjModal(clienteId){
+  editingObjId=null;
+  document.getElementById('obj-modal-title').textContent='Novo objetivo';
   document.getElementById('mo-texto').value='';document.getElementById('mo-icone').value='';
   document.getElementById('modal-obj').dataset.clienteId=clienteId;
   document.getElementById('modal-obj').classList.add('open');
 }
-function closeObjModal(){document.getElementById('modal-obj').classList.remove('open');}
+function openObjModalEdit(id){
+  const o=objetivos.find(x=>x.id===id);if(!o)return;
+  editingObjId=id;
+  document.getElementById('obj-modal-title').textContent='Editar objetivo';
+  document.getElementById('mo-texto').value=o.texto;
+  document.getElementById('mo-icone').value=o.icone||'';
+  document.getElementById('modal-obj').dataset.clienteId=o.clienteId;
+  document.getElementById('modal-obj').classList.add('open');
+}
+function closeObjModal(){editingObjId=null;document.getElementById('modal-obj').classList.remove('open');}
 
 async function saveObj(){
   const texto=document.getElementById('mo-texto').value.trim();if(!texto){showToast('Preencha a descrição.',true);return;}
   const clienteId=document.getElementById('modal-obj').dataset.clienteId;
-  const o={id:String(Date.now()),clienteId,texto,icone:document.getElementById('mo-icone').value.trim()};
-  objetivos.push(o);closeObjModal();renderClientView(clienteId);
-  try{await upsertRow('Objetivos',objToRow(o));showToast('Objetivo salvo.');setTimeout(loadData,1500);}catch(e){showToast('Erro ao salvar',true);}
+  const o={id:editingObjId||String(Date.now()),clienteId,texto,icone:document.getElementById('mo-icone').value.trim()};
+  if(editingObjId){const i=objetivos.findIndex(x=>x.id===editingObjId);if(i>=0)objetivos[i]=o;else objetivos.push(o);}
+  else objetivos.push(o);
+  closeObjModal();renderClientView(clienteId);
+  try{await upsertRow('Objetivos',objToRow(o));showToast(editingObjId?'Objetivo atualizado.':'Objetivo salvo.');setTimeout(loadData,1500);}catch(e){showToast('Erro ao salvar',true);}
 }
 
 async function deleteObj(id){
@@ -129,6 +169,8 @@ async function deleteObj(id){
 
 // ── MODAL ACTION ITEM ──
 function openAIModal(clienteId){
+  editingAIId=null;
+  document.getElementById('ai-modal-title').textContent='Novo action item';
   document.getElementById('ai-texto').value='';document.getElementById('ai-resp').value='Leo';
   document.getElementById('ai-data-prazo').value='';
   const cl=clients.find(c=>c.id===clienteId);
@@ -140,14 +182,34 @@ function openAIModal(clienteId){
   document.getElementById('modal-ai').dataset.clienteId=clienteId;
   document.getElementById('modal-ai').classList.add('open');
 }
-function closeAIModal(){document.getElementById('modal-ai').classList.remove('open');}
+function openAIModalEdit(id){
+  const a=actionItems.find(x=>x.id===id);if(!a)return;
+  editingAIId=id;
+  document.getElementById('ai-modal-title').textContent='Editar action item';
+  document.getElementById('ai-texto').value=a.texto;
+  document.getElementById('ai-resp').value=a.responsavel||'Leo';
+  document.getElementById('ai-data-prazo').value=a.dataPrazo||'';
+  const cl=clients.find(c=>c.id===a.clienteId);
+  const clienteOpt=document.querySelector('#ai-resp option[value="Cliente"]');
+  if(clienteOpt) clienteOpt.textContent=cl?cl.nome:'Cliente';
+  const sel=document.getElementById('ai-reuniao');
+  sel.innerHTML='<option value="">Nenhuma</option>';
+  reunioes.filter(r=>r.clienteId===a.clienteId).forEach(r=>{sel.innerHTML+=`<option value="${r.id}"${r.id===a.reuniaoId?' selected':''}>${r.titulo} (${new Date(r.data).toLocaleDateString('pt-BR')})</option>`;});
+  document.getElementById('modal-ai').dataset.clienteId=a.clienteId;
+  document.getElementById('modal-ai').classList.add('open');
+}
+function closeAIModal(){editingAIId=null;document.getElementById('modal-ai').classList.remove('open');}
 
 async function saveAI(){
   const texto=document.getElementById('ai-texto').value.trim();if(!texto){showToast('Preencha a descrição.',true);return;}
   const clienteId=document.getElementById('modal-ai').dataset.clienteId;
-  const a={id:String(Date.now()),clienteId,reuniaoId:document.getElementById('ai-reuniao').value||'',texto,responsavel:document.getElementById('ai-resp').value,prazo:'',dataPrazo:document.getElementById('ai-data-prazo').value,concluido:false};
-  actionItems.push(a);closeAIModal();renderClientView(clienteId);
-  try{await upsertRow('ActionItems',aiToRow(a));showToast('Action item salvo.');setTimeout(loadData,1500);}catch(e){showToast('Erro ao salvar',true);}
+  const existing=editingAIId?actionItems.find(x=>x.id===editingAIId):null;
+  const a={id:editingAIId||String(Date.now()),clienteId,reuniaoId:document.getElementById('ai-reuniao').value||'',texto,responsavel:document.getElementById('ai-resp').value,prazo:'',dataPrazo:document.getElementById('ai-data-prazo').value,concluido:existing?existing.concluido:false};
+  if(editingAIId){const i=actionItems.findIndex(x=>x.id===editingAIId);if(i>=0)actionItems[i]=a;else actionItems.push(a);}
+  else actionItems.push(a);
+  closeAIModal();
+  if(currentClientId)renderClientView(currentClientId);else renderAll();
+  try{await upsertRow('ActionItems',aiToRow(a));showToast(editingAIId?'Atualizado.':'Action item salvo.');setTimeout(loadData,1500);}catch(e){showToast('Erro ao salvar',true);}
 }
 
 async function toggleAI(id){
