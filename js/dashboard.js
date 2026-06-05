@@ -122,12 +122,15 @@ function renderKPIs(){
   const riscoAlto=ativos.filter(c=>c.churn==='alto').length;
   const pctRisco=ativos.length?Math.round(riscoAlto/ativos.length*100):0;
   document.getElementById('kpi-ativos').textContent=ativos.length;
-  document.getElementById('kpi-ativos-sub').textContent=churned.length?'+'+churned.length+' churned histórico':'nenhum churn registrado';
+  document.getElementById('kpi-ativos-sub').innerHTML=churned.length?`<span style="color:var(--red)">↓ ${churned.length} churned</span> histórico`:'nenhum churn registrado';
   document.getElementById('kpi-mrr-bruto').textContent=fmtMoney(mrrB);
   document.getElementById('kpi-mrr-liquido').textContent=fmtMoney(mrrL);
-  document.getElementById('kpi-mrr-liquido-sub').textContent=mrrB>mrrL?'-'+fmtMoney(mrrB-mrrL)+' em deduções':'';
+  const pctLiquido=mrrB>0?Math.round(mrrL/mrrB*100):100;
+  document.getElementById('kpi-mrr-liquido-sub').innerHTML=mrrB>mrrL?`<span style="color:var(--text-3)">-${fmtMoney(mrrB-mrrL)}</span> em deduções · ${pctLiquido}% do bruto`:'sem deduções';
   document.getElementById('kpi-risco').textContent=riscoAlto;
-  document.getElementById('kpi-risco-sub').textContent=ativos.length?pctRisco+'% da base ativa':'';
+  document.getElementById('kpi-risco-sub').innerHTML=ativos.length?`<span style="${riscoAlto>0?'color:var(--red)':'color:var(--green)'}">${pctRisco}%</span> da base ativa`:'';
+  document.getElementById('kpi-risco').closest('.metric').classList.toggle('metric-danger',riscoAlto>0);
+  document.getElementById('kpi-mrr-liquido').closest('.metric').classList.add('metric-success');
 }
 
 const FASES=['Onboarding','Otimização','Escala','Consolidação','Aceleração'];

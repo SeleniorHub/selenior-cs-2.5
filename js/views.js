@@ -121,7 +121,7 @@ function renderList(){
     return true;
   });
   const list=document.getElementById('client-list');
-  if(!filtered.length){list.innerHTML='<div class="empty-state">Nenhum cliente encontrado.</div>';return;}
+  if(!filtered.length){list.innerHTML='<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">Nenhum cliente encontrado</div><div class="empty-sub">Tente outro filtro ou termo de busca.</div></div>';return;}
   list.innerHTML=filtered.map(cl=>{
     const idx=clients.indexOf(cl);const ci=colorFor(idx);
     const{liquido}=calcMRR(cl);const pct=progressPct(cl);
@@ -182,12 +182,12 @@ function renderClientView(id){
   if(!cl) return;
   const idx=clients.indexOf(cl);const ci=colorFor(idx);
   const av=document.getElementById('cv-avatar');
-  av.textContent=initials(cl.nome);av.style.background=ci.bg;av.style.color=ci.txt;
+  av.textContent=initials(cl.nome);av.style.background=ci.bg;av.style.color=ci.txt;av.style.width='52px';av.style.height='52px';av.style.fontSize='18px';av.style.borderRadius='12px';
   document.getElementById('cv-name').textContent=cl.nome;
-  const mesAtualCl=calcMesAtual(cl.dataInicio);document.getElementById('cv-meta').textContent=cl.nicho+' · Mês '+mesAtualCl+'/12'+(cl.dataInicio?' · '+fmtTempo(cl.dataInicio):'');
+  const mesAtualCl=calcMesAtual(cl.dataInicio);document.getElementById('cv-meta').textContent=cl.nicho+(cl.dataInicio?' · '+fmtTempo(cl.dataInicio)+' de contrato':'');
   const{bruto,liquido}=calcMRR(cl);
   const hs=calcHealthScore(cl);const hl=healthLabel(hs);
-  document.getElementById('cv-badges').innerHTML=`<span class="badge mrr-badge">${fmtMoney(liquido)}/mês</span><span class="badge phase-badge">${cl.fase}</span>${churnBadge(cl.churn)}<span class="health-badge ${hl.cls}">${hl.label} · ${hs}</span>`;
+  document.getElementById('cv-badges').innerHTML=`<div class="client-header-stats"><div class="client-stat"><div class="client-stat-val">${fmtMoney(liquido)}</div><div class="client-stat-lbl">líquido/mês</div></div><div class="client-stat"><div class="client-stat-val">Mês ${mesAtualCl}/12</div><div class="client-stat-lbl">no contrato</div></div></div><div class="client-header-badges"><span class="badge phase-badge">${cl.fase}</span>${churnBadge(cl.churn)}<span class="health-badge ${hl.cls} health-badge-lg">${hl.label} · ${hs}</span></div>`;
   const acts=document.getElementById('cv-actions');
   acts.innerHTML=mode==='admin'?`<button class="topbar-btn" onclick="openClientModal('${cl.id}')">Editar</button><button class="topbar-btn" style="color:var(--red)" onclick="deleteClient('${cl.id}')">Remover</button>`:'';
   renderOverview(cl);renderReunioes(cl);renderMetas(cl);renderActionItems(cl);renderDocumentos(cl);
@@ -227,7 +227,7 @@ function renderReunioes(cl){
   });
   const adminBtn=mode==='admin'?`<button class="edit-btn" onclick="openReuniaoModal('${cl.id}')">+ Adicionar reunião</button>`:'';
   let html='';
-  if(Object.keys(byWeek).length===0){html='<div class="empty-state">Nenhuma reunião registrada ainda.</div>';}
+  if(Object.keys(byWeek).length===0){html='<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-title">Nenhuma reunião ainda</div><div class="empty-sub">Registre a primeira reunião para iniciar o histórico deste cliente.</div></div>';}
   else{
     Object.entries(byWeek).forEach(([week,rs])=>{
       html+=`<div class="semana-block"><div class="semana-label">Semana de ${week}</div>`;
@@ -254,7 +254,7 @@ function renderMetas(cl){
   const clObjs=objetivos.filter(o=>o.clienteId===cl.id);
   const adminBtns=mode==='admin'?`<div style="display:flex;gap:8px;margin-bottom:16px"><button class="edit-btn" onclick="openMetaModal('${cl.id}')">+ Meta</button><button class="edit-btn" onclick="openObjModal('${cl.id}')">+ Objetivo</button></div>`:'';
   let metasHtml='';
-  if(clMetas.length===0){metasHtml='<div class="empty-state" style="padding:24px">Nenhuma meta cadastrada.</div>';}
+  if(clMetas.length===0){metasHtml='<div class="empty-state"><div class="empty-icon">🎯</div><div class="empty-title">Sem metas cadastradas</div><div class="empty-sub">Defina metas mensais para acompanhar o progresso do cliente.</div></div>';}
   else{
     const byMes={};
     clMetas.forEach(m=>{if(!byMes[m.mes])byMes[m.mes]=[];byMes[m.mes].push(m);});
@@ -302,7 +302,7 @@ function renderActionItems(cl){
   let html=adminBtn;
   if(pending.length>0){html+=`<div class="ai-section-title" style="margin-top:16px">Pendentes (${pending.length})</div>`+pending.map(aiHtml).join('');}
   if(done.length>0){html+=`<div class="ai-section-title" style="margin-top:16px">Concluídos</div>`+done.map(aiHtml).join('');}
-  if(pending.length===0&&done.length===0){html+='<div class="empty-state">Nenhum action item ainda.</div>';}
+  if(pending.length===0&&done.length===0){html+='<div class="empty-state"><div class="empty-icon">✓</div><div class="empty-title">Tudo em dia</div><div class="empty-sub">Nenhuma tarefa pendente para este cliente.</div></div>';}
   document.getElementById('ctab-actions').innerHTML=html;
 }
 
@@ -376,7 +376,7 @@ function filterReunioesByDay(day){
 
 function renderReunioesList(items,filtered){
   const listEl=document.getElementById('reunioes-list');if(!listEl)return;
-  if(!items.length){listEl.innerHTML='<div class="empty-state">'+(filtered?'Nenhuma reunião neste dia.':'Nenhuma reunião neste mês.')+'</div>';return;}
+  if(!items.length){listEl.innerHTML='<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-title">'+(filtered?'Nenhuma reunião neste dia':'Nenhuma reunião neste mês')+'</div><div class="empty-sub">Use o botão Nova reunião para adicionar.</div></div>';return;}
   const byWeek={};
   items.forEach(r=>{
     const d=new Date(r.data);const day=d.getDay();
@@ -418,7 +418,7 @@ function renderDocumentos(cl){
   const clDocs=documentos.filter(d=>d.clienteId===cl.id);
   const adminBtn=mode==='admin'?`<button class="edit-btn" onclick="openDocModal('${cl.id}')">+ Documento</button>`:'';
   if(clDocs.length===0){
-    document.getElementById('ctab-documentos').innerHTML=adminBtn+'<div class="empty-state">Nenhum documento ainda.</div>';
+    document.getElementById('ctab-documentos').innerHTML=adminBtn+'<div class="empty-state"><div class="empty-icon">📁</div><div class="empty-title">Sem documentos</div><div class="empty-sub">Faça upload de briefings, contratos, gravações e outros arquivos.</div></div>';
     return;
   }
   const order=['briefing','contrato','qbr','apresentacao','gravacao','outro'];
