@@ -127,6 +127,9 @@ function applyTheme(t,save){
   document.querySelectorAll('#theme-menu button[data-theme]').forEach(btn=>{
     btn.classList.toggle('active',btn.dataset.theme===t);
   });
+  // Re-renderiza charts se o dashboard estiver visível
+  const dashEl=document.getElementById('view-dashboard');
+  if(dashEl&&dashEl.style.display!=='none'&&typeof renderDashboard==='function') renderDashboard();
   // DOM overrides para batman
   const batBrand=document.querySelector('.batman-brand');
   const tagEl=document.querySelector('.sidebar-tag');
