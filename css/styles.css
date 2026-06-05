@@ -395,6 +395,67 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .health-amber{background:var(--amber-bg);color:var(--amber)}
 .health-red{background:var(--red-bg);color:var(--red)}
 
+/* ── DARK THEME ── */
+[data-theme="dark"]{
+  --bg:#0D1117;--surface:#161B22;--surface2:#21262D;--surface3:#30363D;
+  --text:#E6EDF3;--text-2:#8B949E;--text-3:#484F58;
+  --border:rgba(240,246,252,0.1);--border-strong:rgba(240,246,252,0.16);
+  --shadow-sm:0 1px 3px rgba(0,0,0,0.5);--shadow-md:0 4px 14px rgba(0,0,0,0.55);--shadow-lg:0 14px 36px rgba(0,0,0,0.65);
+  --primary-soft:rgba(23,57,93,0.4);--sage:#21262D;
+  --green-bg:rgba(45,106,79,0.25);--amber-bg:rgba(135,106,14,0.25);--red-bg:rgba(139,42,46,0.25);--blue-bg:rgba(23,57,93,0.3);
+}
+[data-theme="dark"] .topbar{background:rgba(13,17,23,0.95);}
+[data-theme="dark"] .sidebar-logo,[data-theme="dark"] .login-brand{filter:brightness(0) invert(1);opacity:0.82}
+
+/* ── BATMAN THEME ── */
+[data-theme="batman"]{
+  --bg:#060606;--surface:#0E0E0E;--surface2:#161616;--surface3:#1E1E1E;
+  --text:#FFD700;--text-2:#C9A227;--text-3:#6B5A1E;
+  --border:rgba(255,215,0,0.1);--border-strong:rgba(255,215,0,0.22);
+  --shadow-sm:0 1px 4px rgba(0,0,0,0.9);--shadow-md:0 4px 14px rgba(0,0,0,0.9);--shadow-lg:0 14px 36px rgba(0,0,0,0.95),0 0 80px rgba(255,215,0,0.04);
+  --primary:#1A1A1A;--primary-dark:#0A0A0A;--primary-soft:rgba(255,215,0,0.12);
+  --accent:#C9A227;--accent-soft:rgba(255,215,0,0.1);--sage:#161616;--ink:#FFD700;
+  --green:#FFD700;--green-bg:rgba(255,215,0,0.1);
+  --amber:#FFA000;--amber-bg:rgba(255,160,0,0.12);
+  --red:#FF4500;--red-bg:rgba(255,69,0,0.12);
+}
+[data-theme="batman"] .topbar{background:rgba(6,6,6,0.97);border-bottom-color:rgba(255,215,0,0.12);}
+[data-theme="batman"] .sidebar{border-right-color:rgba(255,215,0,0.15);}
+[data-theme="batman"] .side-nav-btn.active{background:rgba(255,215,0,0.14);color:#FFD700;box-shadow:0 0 12px rgba(255,215,0,0.08);}
+[data-theme="batman"] .side-nav-btn.active:hover{background:rgba(255,215,0,0.2);color:#FFD700;}
+[data-theme="batman"] .chart-card,[data-theme="batman"] .metric,[data-theme="batman"] .mini-card{border-top:2px solid rgba(255,215,0,0.2)!important;}
+[data-theme="batman"] .btn-save{background:#FFD700;color:#000;}
+[data-theme="batman"] .btn-save:hover{background:#C9A227;color:#000;}
+[data-theme="batman"] .topbar-btn.primary{background:#FFD700;color:#000;border-color:#FFD700;}
+[data-theme="batman"] .topbar-btn.primary:hover{background:#C9A227;border-color:#C9A227;}
+[data-theme="batman"] .briefing-header{background:linear-gradient(120deg,#111 0%,#1A1A0A 100%);border-bottom:1px solid rgba(255,215,0,0.15);}
+[data-theme="batman"] .briefing-greeting{color:#FFD700;}
+[data-theme="batman"] .sidebar-logo{display:none!important;}
+[data-theme="batman"] .batman-brand{display:inline-flex!important;}
+[data-theme="batman"] body::after{content:"🦇";position:fixed;bottom:28px;right:36px;font-size:110px;opacity:0.04;pointer-events:none;z-index:0;line-height:1;}
+.batman-brand{display:none;font-size:22px;line-height:1;align-items:center;}
+
+/* THEME SWITCHER */
+.theme-switcher-wrap{position:relative;margin-bottom:4px;}
+.theme-trigger{display:flex;align-items:center;gap:7px;width:100%;padding:7px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;font-size:12px;font-weight:500;font-family:var(--font);cursor:pointer;color:var(--text-2);transition:all 0.12s;}
+.theme-trigger:hover{background:var(--surface2);color:var(--text);border-color:var(--border-strong);}
+.theme-chevron{margin-left:auto;transition:transform 0.18s;color:var(--text-3);}
+.theme-trigger.open .theme-chevron{transform:rotate(180deg);}
+.theme-menu{position:absolute;bottom:calc(100% + 6px);left:0;right:0;background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--radius-sm);box-shadow:var(--shadow-lg);overflow:hidden;z-index:200;display:none;}
+.theme-menu.open{display:block;}
+.theme-menu button{display:flex;align-items:center;gap:8px;width:100%;padding:9px 12px;border:none;background:transparent;font-size:12.5px;font-family:var(--font);color:var(--text-2);cursor:pointer;transition:background 0.12s;text-align:left;}
+.theme-menu button:hover{background:var(--surface2);color:var(--text);}
+.theme-menu button.active{color:var(--text);font-weight:500;background:var(--primary-soft);}
+
+/* BATMAN ACTIVATION OVERLAY */
+#batman-overlay{position:fixed;inset:0;background:#000;z-index:9999;display:none;align-items:center;justify-content:center;flex-direction:column;gap:8px;}
+#batman-overlay.show{display:flex;animation:batFadeIn 0.35s ease;}
+.bat-signal{font-size:88px;line-height:1;animation:batPulse 0.75s ease-in-out 4;}
+.batman-mode-text{font-size:38px;font-weight:700;color:#FFD700;letter-spacing:10px;margin:16px 0 6px;font-family:'DM Mono',monospace;text-align:center;}
+.batman-alfred{font-size:13px;color:rgba(255,215,0,0.5);letter-spacing:2.5px;text-align:center;font-style:italic;}
+@keyframes batFadeIn{from{opacity:0;transform:scale(1.04)}to{opacity:1;transform:scale(1)}}
+@keyframes batPulse{0%,100%{transform:scale(1);filter:drop-shadow(0 0 0 rgba(255,215,0,0))}50%{transform:scale(1.2);filter:drop-shadow(0 0 24px rgba(255,215,0,0.7))}}
+
 /* MORNING BRIEFING */
 .briefing-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);margin-bottom:20px;overflow:hidden}
 .briefing-header{background:linear-gradient(120deg,var(--primary) 0%,var(--secondary) 100%);padding:14px 22px;display:flex;align-items:center;justify-content:space-between}

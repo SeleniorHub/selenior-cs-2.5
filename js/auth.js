@@ -71,5 +71,79 @@ document.getElementById('pwd-input').addEventListener('keydown',e=>{if(e.key==='
 window.addEventListener('load',()=>{
   const vEl=document.getElementById('app-version');
   if(vEl) vEl.textContent='v'+VERSION;
+  initTheme();
   if(loadSession())enterApp();
 });
+
+// ── THEME ──
+let themeDropCount=0,themeListenerAdded=false;
+
+function initTheme(){
+  const saved=localStorage.getItem('selenior_theme')||'light';
+  applyTheme(saved,false);
+  if(!themeListenerAdded){
+    themeListenerAdded=true;
+    document.addEventListener('click',e=>{
+      if(!e.target.closest('.theme-switcher-wrap')){
+        document.getElementById('theme-menu')?.classList.remove('open');
+        document.getElementById('theme-trigger')?.classList.remove('open');
+      }
+    });
+  }
+}
+
+function toggleThemeMenu(){
+  const menu=document.getElementById('theme-menu');
+  const trigger=document.getElementById('theme-trigger');
+  const isOpening=!menu.classList.contains('open');
+  menu.classList.toggle('open');trigger.classList.toggle('open');
+  if(isOpening){
+    themeDropCount++;
+    if(themeDropCount>=10){
+      themeDropCount=0;
+      menu.classList.remove('open');trigger.classList.remove('open');
+      setTimeout(activateBatmanMode,250);
+    }
+  }
+}
+
+function setTheme(t){
+  document.getElementById('theme-menu').classList.remove('open');
+  document.getElementById('theme-trigger').classList.remove('open');
+  themeDropCount=0;
+  applyTheme(t,true);
+}
+
+function applyTheme(t,save){
+  if(save) localStorage.setItem('selenior_theme',t);
+  if(t==='light') document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme',t);
+  const icons={light:'☀️',dark:'🌙',batman:'🦇'};
+  const labels={light:'Claro',dark:'Escuro',batman:'Batman'};
+  const iconEl=document.getElementById('theme-icon');
+  const labelEl=document.getElementById('theme-label');
+  if(iconEl) iconEl.textContent=icons[t]||'☀️';
+  if(labelEl) labelEl.textContent=labels[t]||'Claro';
+  document.querySelectorAll('#theme-menu button[data-theme]').forEach(btn=>{
+    btn.classList.toggle('active',btn.dataset.theme===t);
+  });
+  // DOM overrides para batman
+  const batBrand=document.querySelector('.batman-brand');
+  const tagEl=document.querySelector('.sidebar-tag');
+  const vEl=document.getElementById('app-version');
+  if(t==='batman'){
+    if(batBrand) batBrand.style.display='inline-flex';
+    if(tagEl){if(!tagEl.dataset.orig)tagEl.dataset.orig=tagEl.textContent;tagEl.textContent='WAYNE';}
+    if(vEl) vEl.textContent='Alfred Pennyworth, Butler';
+  }else{
+    if(batBrand) batBrand.style.display='none';
+    if(tagEl&&tagEl.dataset.orig) tagEl.textContent=tagEl.dataset.orig;
+    if(vEl) vEl.textContent='v'+VERSION;
+  }
+}
+
+function activateBatmanMode(){
+  const overlay=document.getElementById('batman-overlay');
+  if(overlay){overlay.classList.add('show');setTimeout(()=>overlay.classList.remove('show'),3600);}
+  applyTheme('batman',true);
+}

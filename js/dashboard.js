@@ -19,7 +19,8 @@ function renderBriefing(){
   const el=document.getElementById('briefing-card');if(!el)return;
   const now=new Date();
   const hour=now.getHours();
-  const greeting=hour<12?'Bom dia':hour<18?'Boa tarde':'Boa noite';
+  const isBatman=document.documentElement.getAttribute('data-theme')==='batman';
+  const greeting=isBatman?'Good evening, sir':(hour<12?'Bom dia':hour<18?'Boa tarde':'Boa noite');
   const todayStr=now.toISOString().split('T')[0];
   const dateLabel=now.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'});
   const today=new Date(now);today.setHours(0,0,0,0);
