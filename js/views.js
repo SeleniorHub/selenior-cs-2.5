@@ -174,7 +174,7 @@ function openClientView(id){
   document.getElementById('view-list').style.display='none';
   document.getElementById('view-client').style.display='block';
   const cl=clients.find(c=>c.id===id);
-  document.getElementById('topbar-context').textContent=cl?cl.nome:'Cliente';
+  document.getElementById('topbar-context').innerHTML=cl?`<span class="breadcrumb-back" onclick="event.stopPropagation();goBack()">Clientes</span><span class="breadcrumb-sep">›</span><span>${cl.nome}</span>`:'Cliente';
   document.getElementById('add-btn-top').style.display='none';
   showClientTab('overview',document.querySelector('.ctab'));
   window.scrollTo({top:0,behavior:'smooth'});
@@ -370,16 +370,16 @@ function renderReunioesView(){
   const firstDay=new Date(year,month,1).getDay();
   const daysInMonth=new Date(year,month+1,0).getDate();
   const t=new Date();const ty=t.getFullYear(),tm=t.getMonth(),td=t.getDate();
-  const meetDays=new Set(monthReunioes.map(r=>new Date(r.data).getDate()));
+  const meetDayCounts=new Map();monthReunioes.forEach(r=>{const _d=new Date(r.data).getDate();meetDayCounts.set(_d,(meetDayCounts.get(_d)||0)+1);});
   let calHtml='<div class="cal-grid">';
   ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].forEach(d=>{calHtml+=`<div class="cal-day-hdr">${d}</div>`;});
   for(let i=0;i<firstDay;i++) calHtml+='<div class="cal-cell"></div>';
   for(let d=1;d<=daysInMonth;d++){
     const isToday=ty===year&&tm===month&&td===d;
-    const hasMt=meetDays.has(d);
+    const hasMt=meetDayCounts.has(d);const mtCount=meetDayCounts.get(d)||0;
     calHtml+=`<div class="cal-cell${isToday?' cal-today':''}${hasMt?' cal-has-meeting':''}"${hasMt?` onclick="filterReunioesByDay(${d})"`:''}>`;
     calHtml+=`<div class="cal-day-num">${d}</div>`;
-    if(hasMt) calHtml+='<div class="cal-dot"></div>';
+    if(hasMt) calHtml+=`<div class="cal-meeting-badge">${mtCount}</div>`;
     calHtml+='</div>';
   }
   calHtml+='</div>';

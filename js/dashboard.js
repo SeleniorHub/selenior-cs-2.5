@@ -94,15 +94,18 @@ function renderBriefing(){
     </div>
     <div class="briefing-cols">
       <div class="briefing-col">
-        <div class="briefing-col-title">Reuniões hoje ${countBadge(todayMeetings.length)}</div>
+        <div class="briefing-col-title">📋 Reuniões hoje ${countBadge(todayMeetings.length)}</div>
+        ${todayMeetings.length>0?`<div class="briefing-big">${todayMeetings.length}</div>`:''}
         ${meetHtml}
       </div>
       <div class="briefing-col">
-        <div class="briefing-col-title">Urgente ${countBadge(urgentAI.length)}</div>
+        <div class="briefing-col-title">⚡ Urgente ${countBadge(urgentAI.length)}</div>
+        ${urgentAI.length>0?`<div class="briefing-big briefing-big-amber">${urgentAI.length}</div>`:''}
         ${aiHtml}
       </div>
       <div class="briefing-col">
-        <div class="briefing-col-title">Atenção ${countBadge(atRisk.length)}</div>
+        <div class="briefing-col-title">🔴 Atenção ${countBadge(atRisk.length)}</div>
+        ${atRisk.length>0?`<div class="briefing-big briefing-big-red">${atRisk.length}</div>`:''}
         ${riskHtml}
       </div>
     </div>`;

@@ -67,11 +67,28 @@ async function deleteClient(id){
 }
 
 // ── MODAL REUNIÃO ──
+function populatePontosEditor(pontos){
+  document.getElementById('mr-pontos-list').innerHTML=(pontos||[]).map(p=>{
+    const safe=p.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+    return`<div class="cp-editor-item" data-ponto="${safe}"><span class="cp-editor-status">•</span><span class="cp-editor-text">${p}</span><button type="button" class="cp-editor-rm" onclick="this.closest('.cp-editor-item').remove()" title="Remover">✕</button></div>`;
+  }).join('');
+  const inp=document.getElementById('mr-pontos-input');if(inp)inp.value='';
+}
+function addPontoItem(){
+  const input=document.getElementById('mr-pontos-input');
+  const text=input.value.trim();if(!text)return;
+  const item=document.createElement('div');
+  item.className='cp-editor-item';item.dataset.ponto=text;
+  item.innerHTML=`<span class="cp-editor-status">•</span><span class="cp-editor-text">${text}</span><button type="button" class="cp-editor-rm" onclick="this.closest('.cp-editor-item').remove()" title="Remover">✕</button>`;
+  document.getElementById('mr-pontos-list').appendChild(item);
+  input.value='';input.focus();
+}
+
 function openReuniaoModal(clienteId=null){
   editingReuniaoId=null;
   document.getElementById('mr-titulo').value='';document.getElementById('mr-data').value=new Date().toISOString().split('T')[0];
   document.getElementById('mr-duracao').value='';document.getElementById('mr-participantes').value='';
-  document.getElementById('mr-resumo').value='';document.getElementById('mr-pontos').value='';
+  document.getElementById('mr-resumo').value='';populatePontosEditor([]);
   document.getElementById('mr-title').textContent='Nova reunião';
   document.getElementById('mr-title').dataset.clienteId=clienteId||'';
   const grp=document.getElementById('mr-cliente-group');
@@ -94,7 +111,7 @@ function openReuniaoModalEdit(id){
   document.getElementById('mr-duracao').value=r.duracao||'';
   document.getElementById('mr-participantes').value=r.participantes||'';
   document.getElementById('mr-resumo').value=r.resumo||'';
-  document.getElementById('mr-pontos').value=(r.pontos||[]).join('\n');
+  populatePontosEditor(r.pontos||[]);
   document.getElementById('mr-title').textContent='Editar reunião';
   document.getElementById('mr-title').dataset.clienteId=r.clienteId;
   document.getElementById('mr-cliente-group').style.display='none';
@@ -107,7 +124,7 @@ async function saveReuniao(){
   let clienteId=document.getElementById('mr-title').dataset.clienteId;
   if(!clienteId) clienteId=document.getElementById('mr-cliente-sel').value;
   if(!clienteId){showToast('Selecione um cliente.',true);return;}
-  const r={id:editingReuniaoId||String(Date.now()),clienteId,data:document.getElementById('mr-data').value,titulo,duracao:document.getElementById('mr-duracao').value.trim(),participantes:document.getElementById('mr-participantes').value.trim(),resumo:document.getElementById('mr-resumo').value.trim(),pontos:document.getElementById('mr-pontos').value.split('\n').map(s=>s.trim()).filter(Boolean),actionItemIds:''};
+  const r={id:editingReuniaoId||String(Date.now()),clienteId,data:document.getElementById('mr-data').value,titulo,duracao:document.getElementById('mr-duracao').value.trim(),participantes:document.getElementById('mr-participantes').value.trim(),resumo:document.getElementById('mr-resumo').value.trim(),pontos:[...document.querySelectorAll('#mr-pontos-list .cp-editor-item')].map(el=>el.dataset.ponto).filter(Boolean),actionItemIds:''};
   if(editingReuniaoId){const i=reunioes.findIndex(x=>x.id===editingReuniaoId);if(i>=0)reunioes[i]=r;else reunioes.push(r);}else reunioes.push(r);
   closeReuniaoModal();
   if(currentClientId) renderClientView(currentClientId);else renderAll();
