@@ -15,8 +15,7 @@ function openClientModal(id=null){
   document.getElementById('mc-indicador').value=cl?cl.indicador:'';
   document.getElementById('mc-comissao-val').value=cl?cl.comissaoVal:'';
   document.getElementById('mc-comissao-tipo').value=cl?cl.comissaoTipo:'pct';
-  document.getElementById('mc-checkpoints').value=cl?(cl.checkpoints||[]).join('\n'):'';
-  document.getElementById('mc-done').value=cl?(cl.done||[]).join('\n'):'';
+  populateCpEditor(cl?cl.checkpoints||[]:[], cl?cl.done||[]:[]);
   document.getElementById('mc-nota').value=cl?cl.nota:'';
   document.getElementById('mc-depo').value=cl?cl.depoimento:'';
   document.getElementById('mc-status').value=cl?cl.status||'ativo':'ativo';
@@ -27,10 +26,33 @@ function openClientModal(id=null){
 function closeClientModal(){document.getElementById('modal-client').classList.remove('open');}
 function toggleDataFim(status){document.getElementById('mc-data-fim-group').style.display=status==='churned'?'block':'none';}
 
+function populateCpEditor(checkpoints,done){
+  const doneNorm=(done||[]).map(s=>s.trim().toLowerCase());
+  document.getElementById('mc-cp-list').innerHTML=(checkpoints||[]).map(cp=>{
+    const isDone=doneNorm.includes(cp.trim().toLowerCase());
+    const safe=cp.replace(/"/g,'&quot;');
+    return`<div class="cp-editor-item${isDone?' cp-editor-item-done':''}" data-cptext="${safe}"><span class="cp-editor-status">${isDone?'✓':'○'}</span><span class="cp-editor-text">${cp}</span><button type="button" class="cp-editor-rm" onclick="this.closest('.cp-editor-item').remove()" title="Remover">✕</button></div>`;
+  }).join('');
+  document.getElementById('mc-cp-input').value='';
+}
+
+function addCheckpointItem(){
+  const input=document.getElementById('mc-cp-input');
+  const text=input.value.trim();if(!text)return;
+  const item=document.createElement('div');
+  item.className='cp-editor-item';item.dataset.cptext=text;
+  item.innerHTML=`<span class="cp-editor-status">○</span><span class="cp-editor-text">${text}</span><button type="button" class="cp-editor-rm" onclick="this.closest('.cp-editor-item').remove()" title="Remover">✕</button>`;
+  document.getElementById('mc-cp-list').appendChild(item);
+  input.value='';input.focus();
+}
+
 async function saveClient(){
   const nome=document.getElementById('mc-nome').value.trim();
   if(!nome){showToast('Preencha o nome.',true);return;}
-  const cl={id:editingClientId||String(Date.now()),nome,nicho:document.getElementById('mc-nicho').value.trim(),fase:document.getElementById('mc-fase').value,churn:document.getElementById('mc-churn').value,dataInicio:document.getElementById('mc-data-inicio').value,mrr:document.getElementById('mc-mrr').value.trim(),custo:document.getElementById('mc-custo').value.trim(),indicador:document.getElementById('mc-indicador').value.trim(),comissaoVal:document.getElementById('mc-comissao-val').value.trim(),comissaoTipo:document.getElementById('mc-comissao-tipo').value,checkpoints:document.getElementById('mc-checkpoints').value.split('\n').map(s=>s.trim()).filter(Boolean),done:document.getElementById('mc-done').value.split('\n').map(s=>s.trim()).filter(Boolean),nota:document.getElementById('mc-nota').value.trim(),depoimento:document.getElementById('mc-depo').value.trim(),status:document.getElementById('mc-status').value,dataFim:document.getElementById('mc-data-fim').value};
+  const newCps=[...document.querySelectorAll('#mc-cp-list .cp-editor-item')].map(el=>el.dataset.cptext).filter(Boolean);
+  const existingDone=editingClientId?(clients.find(c=>c.id===editingClientId)?.done||[]):[];
+  const newDone=existingDone.filter(d=>newCps.some(cp=>cp.trim().toLowerCase()===d.trim().toLowerCase()));
+  const cl={id:editingClientId||String(Date.now()),nome,nicho:document.getElementById('mc-nicho').value.trim(),fase:document.getElementById('mc-fase').value,churn:document.getElementById('mc-churn').value,dataInicio:document.getElementById('mc-data-inicio').value,mrr:document.getElementById('mc-mrr').value.trim(),custo:document.getElementById('mc-custo').value.trim(),indicador:document.getElementById('mc-indicador').value.trim(),comissaoVal:document.getElementById('mc-comissao-val').value.trim(),comissaoTipo:document.getElementById('mc-comissao-tipo').value,checkpoints:newCps,done:newDone,nota:document.getElementById('mc-nota').value.trim(),depoimento:document.getElementById('mc-depo').value.trim(),status:document.getElementById('mc-status').value,dataFim:document.getElementById('mc-data-fim').value};
   if(editingClientId){const i=clients.findIndex(c=>c.id===editingClientId);if(i>=0)clients[i]=cl;else clients.push(cl);}else clients.push(cl);
   closeClientModal();renderAll();if(currentClientId===editingClientId)renderClientView(editingClientId);
   setSyncStatus('syncing','Salvando...');

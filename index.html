@@ -268,8 +268,15 @@
       <select id="mc-comissao-tipo"><option value="pct">Porcentagem (%)</option><option value="fixo">Valor fixo (R$)</option></select>
     </div>
     <div class="modal-section">Checkpoints</div>
-    <div class="form-group"><label>Checkpoints (um por linha)</label><textarea id="mc-checkpoints"></textarea></div>
-    <div class="form-group"><label>Concluídos (um por linha)</label><textarea id="mc-done"></textarea></div>
+    <div class="form-group">
+      <label>Marcos de entrega</label>
+      <div class="cp-editor" id="mc-cp-list"></div>
+      <div class="cp-add-row">
+        <input class="cp-add-input" id="mc-cp-input" type="text" placeholder="Adicionar checkpoint e pressionar Enter…" onkeydown="if(event.key==='Enter'){event.preventDefault();addCheckpointItem()}">
+        <button type="button" class="cp-add-btn" onclick="addCheckpointItem()">+</button>
+      </div>
+      <div class="form-hint">Clique no item no painel do cliente para marcar como concluído.</div>
+    </div>
     <div class="modal-section">Observações</div>
     <div class="form-group"><label>Nota interna</label><textarea id="mc-nota"></textarea></div>
     <div class="form-group"><label>Depoimento</label><textarea id="mc-depo"></textarea></div>

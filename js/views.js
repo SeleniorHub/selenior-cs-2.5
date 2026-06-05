@@ -70,6 +70,19 @@ function openClientViewTab(id,tab){
   },60);
 }
 
+// ── TOGGLE CHECKPOINT ──
+async function toggleCheckpoint(clientId,cpText){
+  const cl=clients.find(c=>c.id===clientId);
+  if(!cl||mode!=='admin') return;
+  const norm=s=>s.trim().toLowerCase();
+  const isDone=(cl.done||[]).some(d=>norm(d)===norm(cpText));
+  if(isDone){cl.done=(cl.done||[]).filter(d=>norm(d)!==norm(cpText));}
+  else{cl.done=[...(cl.done||[]),cpText];}
+  renderOverview(cl);
+  try{await upsertRow('Clientes',clientToRow(cl));}
+  catch(e){showToast('Erro ao salvar checkpoint',true);}
+}
+
 // ── LIST VIEW ──
 function setFilter(f,btn){activeFilter=f;document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderList();}
 function renderAll(){
@@ -196,7 +209,12 @@ function renderClientView(id){
 function renderOverview(cl){
   const{bruto,comissao,custo,liquido}=calcMRR(cl);
   const doneNorm=(cl.done||[]).map(s=>s.trim().toLowerCase());
-  const cpHtml=(cl.checkpoints||[]).map(cp=>{const done=doneNorm.includes(cp.trim().toLowerCase());return`<div class="cp-item"><div class="cp-dot ${done?'cp-done-dot':'cp-todo-dot'}"></div><span class="${done?'cp-done-lbl':''}">${cp}</span></div>`;}).join('');
+  const cpHtml=(cl.checkpoints||[]).map(cp=>{
+    const done=doneNorm.includes(cp.trim().toLowerCase());
+    const clickAttr=mode==='admin'?`onclick="toggleCheckpoint('${cl.id}',${JSON.stringify(cp)})" style="cursor:pointer;user-select:none"`:'';
+    const icon=done?`<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:9px;height:9px"><polyline points="2 6 5 9 10 3"/></svg>`:'';
+    return`<div class="cp-item cp-item-toggle" ${clickAttr}><div class="cp-check ${done?'cp-check-done':''}">${icon}</div><span class="${done?'cp-done-lbl':''}">${cp}</span></div>`;
+  }).join('');
   const comissaoInfo=cl.indicador?`<div style="margin-top:8px;font-size:12px;color:var(--text-3)">Indicado por <strong style="color:var(--text-2)">${cl.indicador}</strong>${cl.comissaoVal?' · '+(cl.comissaoTipo==='pct'?cl.comissaoVal+'%':'R$'+cl.comissaoVal):''}</div>`:'';
   const notaHtml=cl.nota?`<div class="section-gap"><div class="mini-title">Nota interna</div><div class="note-box">${cl.nota}</div></div>`:'';
   const depoHtml=cl.depoimento?`<div class="section-gap"><div class="mini-title">Depoimento</div><div class="depo-box">"${cl.depoimento}"</div></div>`:'';
