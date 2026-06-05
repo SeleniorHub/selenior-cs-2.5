@@ -64,8 +64,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .sidebar-nav{display:flex;flex-direction:column;gap:2px;flex:1}
 .side-nav-btn{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:var(--radius-sm);border:none;background:transparent;color:var(--text-2);font-size:13px;font-weight:500;font-family:var(--font);cursor:pointer;text-align:left;transition:background 0.12s,color 0.12s}
 .side-nav-btn:hover{background:var(--surface2);color:var(--text)}
-.side-nav-btn.active{background:var(--primary);color:white;box-shadow:var(--shadow-sm)}
-.side-nav-btn.active:hover{background:var(--primary-dark);color:white}
+.side-nav-btn.active{background:var(--primary-soft);color:var(--primary);box-shadow:inset 3px 0 0 var(--primary)}
+.side-nav-btn.active:hover{background:var(--primary-soft);color:var(--primary);box-shadow:inset 3px 0 0 var(--primary)}
 .side-nav-icon{width:17px;height:17px;flex-shrink:0}
 .sidebar-footer{display:flex;flex-direction:column;gap:10px;padding-top:14px;border-top:1px solid var(--border);margin-top:8px}
 .sync-status{font-size:11px;color:var(--text-3);display:flex;align-items:center;gap:6px;padding:0 8px}
@@ -87,7 +87,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .app-main{flex:1;min-width:0;display:flex;flex-direction:column}
 .topbar{position:sticky;top:0;z-index:50;background:rgba(250,250,247,0.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:0 28px;height:56px;display:flex;align-items:center;justify-content:space-between}
 .topbar-left{display:flex;align-items:center;gap:14px}
-.topbar-context{font-size:16px;font-weight:500;letter-spacing:-0.2px;color:var(--text);margin:0}
+.topbar-context{font-size:20px;font-weight:600;letter-spacing:-0.4px;color:var(--text);margin:0}
 .topbar-right{display:flex;align-items:center;gap:8px}
 .topbar-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;font-size:12.5px;font-weight:500;font-family:var(--font);cursor:pointer;color:var(--text-2);transition:all 0.12s}
 .topbar-btn:hover{background:var(--surface2);color:var(--text);border-color:var(--border-strong)}
@@ -108,7 +108,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
 .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
 .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px;margin-bottom:14px;box-shadow:var(--shadow-sm)}
-.chart-title{font-size:13.5px;font-weight:500;margin-bottom:4px;color:var(--text);letter-spacing:-0.1px}
+.chart-title{font-size:15px;font-weight:600;margin-bottom:6px;color:var(--text);letter-spacing:-0.2px}
 .chart-sub{font-size:11.5px;color:var(--text-3);margin-bottom:16px;line-height:1.5}
 .chart-canvas{position:relative;height:220px}
 
@@ -192,7 +192,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow-sm);transition:box-shadow 0.15s,transform 0.15s}
 .metric:hover{box-shadow:var(--shadow-md)}
 .metric-label{font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.9px;margin-bottom:8px;font-weight:500}
-.metric-value{font-size:26px;font-weight:500;color:var(--text);line-height:1;font-family:var(--mono);letter-spacing:-0.5px}
+.metric-value{font-size:42px;font-weight:500;color:var(--text);line-height:1;font-family:var(--mono);letter-spacing:-1.5px}
 .metric-sub{font-size:11px;color:var(--text-3);margin-top:6px}
 .toolbar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
 .filter-btn{padding:6px 14px;border-radius:var(--radius-pill);border:1px solid var(--border);background:var(--surface);font-size:12px;font-weight:500;cursor:pointer;color:var(--text-2);font-family:var(--font);transition:all 0.12s}
@@ -212,7 +212,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .row-info{flex:1;min-width:0}
 .row-name{font-size:14px;font-weight:500}
 .row-sub{font-size:12px;color:var(--text-2);margin-top:1px}
-.progress-wrap{height:3px;background:var(--surface2);border-radius:2px;margin-top:5px;overflow:hidden;max-width:200px}
+.progress-wrap{height:7px;background:var(--surface2);border-radius:4px;margin-top:7px;overflow:hidden;max-width:200px}
 .progress-fill{height:100%;border-radius:2px;background:var(--green)}
 .row-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
 .badge{font-size:10.5px;font-weight:500;padding:3px 10px;border-radius:var(--radius-pill);letter-spacing:0.2px}
@@ -406,6 +406,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 }
 [data-theme="dark"] .topbar{background:rgba(13,17,23,0.95);}
 [data-theme="dark"] .sidebar-logo,[data-theme="dark"] .login-brand{filter:brightness(0) invert(1);opacity:0.82}
+[data-theme="dark"] .side-nav-btn.active{color:var(--text);box-shadow:inset 3px 0 0 rgba(255,255,255,0.25);}
+[data-theme="dark"] .side-nav-btn.active:hover{color:var(--text);box-shadow:inset 3px 0 0 rgba(255,255,255,0.25);}
 
 /* ── BATMAN THEME ── */
 [data-theme="batman"]{
@@ -458,14 +460,14 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 
 /* INSTRUMENT SERIF — citações, destaques, papo reto */
 .depo-box{font-family:var(--serif);font-style:italic;font-size:14px;line-height:1.7;}
-.briefing-greeting{font-family:var(--serif);font-size:15px;}
+.briefing-greeting{font-family:var(--serif);font-size:19px;}
 .popup-title{font-family:var(--serif);}
 .note-box{font-family:var(--serif);font-size:13.5px;line-height:1.65;}
 
 /* MORNING BRIEFING */
 .briefing-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);margin-bottom:20px;overflow:hidden}
 .briefing-header{background:linear-gradient(120deg,var(--primary) 0%,var(--secondary) 100%);padding:14px 22px;display:flex;align-items:center;justify-content:space-between}
-.briefing-greeting{font-size:14px;font-weight:500;color:white;letter-spacing:-0.1px}
+.briefing-greeting{font-size:19px;font-weight:400;color:white;letter-spacing:-0.3px}
 .briefing-time{font-size:11.5px;color:rgba(255,255,255,0.65);font-family:var(--mono)}
 .briefing-cols{display:grid;grid-template-columns:1fr 1fr 1fr}
 .briefing-col{padding:16px 20px;border-right:1px solid var(--border)}
@@ -486,3 +488,21 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .alert-actions{display:flex;gap:6px;align-items:center;flex-shrink:0;margin-left:auto}
 .alert-action-btn{padding:5px 12px;border-radius:var(--radius-pill);border:1px solid var(--border);background:var(--surface);font-size:11.5px;font-weight:500;font-family:var(--font);cursor:pointer;color:var(--text-2);white-space:nowrap;transition:all 0.12s;flex-shrink:0}
 .alert-action-btn:hover{background:var(--primary);color:white;border-color:var(--primary)}
+
+/* FADE-IN ANIMATIONS */
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.briefing-card{animation:fadeUp 0.4s ease both}
+.kpi-grid .metric:nth-child(1){animation:fadeUp 0.4s ease 0ms both}
+.kpi-grid .metric:nth-child(2){animation:fadeUp 0.4s ease 70ms both}
+.kpi-grid .metric:nth-child(3){animation:fadeUp 0.4s ease 140ms both}
+.kpi-grid .metric:nth-child(4){animation:fadeUp 0.4s ease 210ms both}
+.summary-grid .metric:nth-child(1){animation:fadeUp 0.4s ease 0ms both}
+.summary-grid .metric:nth-child(2){animation:fadeUp 0.4s ease 70ms both}
+.summary-grid .metric:nth-child(3){animation:fadeUp 0.4s ease 140ms both}
+.summary-grid .metric:nth-child(4){animation:fadeUp 0.4s ease 210ms both}
+.charts-grid .chart-card:nth-child(1){animation:fadeUp 0.4s ease 250ms both}
+.charts-grid .chart-card:nth-child(2){animation:fadeUp 0.4s ease 320ms both}
+.client-row{animation:fadeUp 0.3s ease both}
+.alert-row{animation:fadeUp 0.3s ease both}
+.actions-row{animation:fadeUp 0.3s ease both}
+@media(prefers-reduced-motion:reduce){.briefing-card,.kpi-grid .metric,.summary-grid .metric,.charts-grid .chart-card,.client-row,.alert-row,.actions-row{animation:none}}
