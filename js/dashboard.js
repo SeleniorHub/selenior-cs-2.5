@@ -1,6 +1,6 @@
 // Dashboard Selenior — KPIs, gráficos, safra, sinais de alerta e action items.
 
-let phaseChart=null, forecastChart=null, forecastData=[], actionsFilter='todos';
+let phaseChart=null, mrrEvolutionChart=null, financialChart=null, churnChart=null, actionsFilter='todos';
 
 function activeClients(){return clients.filter(c=>(c.status||'ativo')==='ativo');}
 
@@ -10,8 +10,11 @@ function renderDashboard(){
   renderBriefing();
   renderKPIs();
   renderPhaseChart();
-  renderMRRForecast();
+  renderMRREvolution();
   renderCohortTable();
+  renderFinancialSection();
+  renderChurnSection();
+  renderEngagementHeatmap();
   renderAlerts();
 }
 
@@ -180,119 +183,257 @@ function renderPhaseChart(){
     data:{labels:FASES,datasets:[{data:counts,backgroundColor:ct.phases,borderColor:ct.border,borderWidth:2}]},
     options:{
       responsive:true,maintainAspectRatio:false,cutout:'65%',
+      onClick:(evt,elements)=>{
+        if(!elements.length)return;
+        const fase=FASES[elements[0].index];
+        if(!counts[elements[0].index])return;
+        showMainView('clientes',null);
+        const btn=[...document.querySelectorAll('#view-list .filter-btn')].find(b=>b.textContent===fase);
+        if(btn)setFilter(fase,btn);
+      },
       plugins:{
         legend:{position:'right',labels:{font:{family:'Clash Display',size:11.5},color:ct.text,padding:14,boxWidth:8,boxHeight:8,usePointStyle:true,pointStyle:'circle',filter:(item)=>counts[item.index]>0}},
-        tooltip:{backgroundColor:ct.tooltip,titleFont:{family:'Clash Display',size:12},bodyFont:{family:'Clash Display',size:12},padding:10,cornerRadius:8,displayColors:true,callbacks:{label:(item)=>` ${item.label}: ${item.raw} cliente${item.raw===1?'':'s'}`}}
+        tooltip:{backgroundColor:ct.tooltip,titleFont:{family:'Clash Display',size:12},bodyFont:{family:'Clash Display',size:12},padding:10,cornerRadius:8,displayColors:true,callbacks:{label:(item)=>` ${item.label}: ${item.raw} cliente${item.raw===1?'':'s'} — clique para filtrar`}}
       }
     },
     plugins:[centerPlugin]
   });
 }
 
-function buildMRRForecast(){
-  const today=new Date();const act=activeClients();const result=[];
-  for(let i=0;i<7;i++){
-    const d=new Date(today.getFullYear(),today.getMonth()+i,1);
-    const label=d.toLocaleDateString('pt-BR',{month:'short',year:'2-digit'}).replace('.','');
-    let base=0,conservative=0;const baseList=[],conservList=[];
-    act.forEach(cl=>{
-      const{liquido}=calcMRR(cl);
-      base+=liquido;baseList.push(cl);
-      const mesNaData=cl.dataInicio?(()=>{
-        const ini=new Date(cl.dataInicio);
-        return((d.getFullYear()-ini.getFullYear())*12)+(d.getMonth()-ini.getMonth())+1;
-      })():1;
-      if(cl.churn==='alto'&&mesNaData>=12){/* removido do cenário conservador */}
-      else{conservative+=liquido;conservList.push(cl);}
-    });
-    result.push({label,base,conservative,baseList,conservList,date:d});
-  }
-  return result;
-}
 
-function renderMRRForecast(){
-  forecastData=buildMRRForecast();
-  const canvas=document.getElementById('chart-mrr-forecast');if(!canvas)return;
-  if(forecastChart)forecastChart.destroy();
+function renderMRREvolution(){
+  const canvas=document.getElementById('chart-mrr-evolution');if(!canvas)return;
+  if(mrrEvolutionChart)mrrEvolutionChart.destroy();
   const ct=getChartTheme();
   const t=document.documentElement.getAttribute('data-theme')||'light';
-  const l1c=t==='batman'?'#C8A84B':t==='dark'?'#60A5FA':'#17395D';
-  const l2c=t==='batman'?'#8A6D35':t==='dark'?'#FBBF24':'#C49417';
+  const lc=t==='batman'?'#C8A84B':t==='dark'?'#60A5FA':'#17395D';
+  const newC=t==='batman'?'rgba(107,122,74,0.75)':t==='dark'?'rgba(52,211,153,0.75)':'rgba(45,106,79,0.75)';
+  const churnC=t==='batman'?'rgba(138,74,58,0.75)':t==='dark'?'rgba(248,113,113,0.75)':'rgba(139,42,46,0.75)';
+
+  // Build monthly data: prefer historicoMRR, fallback reconstruct from clients
+  const monthMap={};
+  if(historicoMRR.length){
+    historicoMRR.forEach(h=>{monthMap[h.mes]=(monthMap[h.mes]||0)+h.mrr;});
+  }else{
+    const now=new Date();
+    for(let i=11;i>=0;i--){
+      const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+      const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+      const dEnd=new Date(d.getFullYear(),d.getMonth()+1,0);
+      let tot=0;
+      clients.forEach(cl=>{
+        if(!cl.dataInicio)return;
+        const s=new Date(cl.dataInicio);const e=cl.dataFim?new Date(cl.dataFim):null;
+        if(s<=dEnd&&(!e||e>=d))tot+=parseMoney(cl.mrr);
+      });
+      if(tot>0)monthMap[key]=tot;
+    }
+  }
+  const months=Object.keys(monthMap).sort();
+  if(!months.length){
+    const wrap=canvas.closest('.chart-canvas');if(wrap)wrap.innerHTML='<div class="empty-state" style="height:200px;display:flex;align-items:center;justify-content:center"><div class="empty-title">Adicione registros em Histórico MRR para ver a evolução</div></div>';
+    return;
+  }
+
+  // New MRR per month (clients starting that month)
+  const newMRR=months.map(m=>{
+    let n=0;
+    if(historicoMRR.length){
+      const clientFirst={};
+      historicoMRR.forEach(h=>{if(!clientFirst[h.clienteId]||h.mes<clientFirst[h.clienteId])clientFirst[h.clienteId]=h.mes;});
+      Object.entries(clientFirst).forEach(([cid,first])=>{
+        if(first===m)n+=historicoMRR.filter(h=>h.clienteId===cid&&h.mes===m).reduce((s,h)=>s+h.mrr,0);
+      });
+    }else{
+      clients.forEach(cl=>{if(cl.dataInicio&&cl.dataInicio.substring(0,7)===m)n+=parseMoney(cl.mrr);});
+    }
+    return n;
+  });
+
+  // Churn MRR per month (negative, for display below zero)
+  const churnMRR=months.map(m=>{
+    let c=0;
+    clients.forEach(cl=>{if(cl.status==='churned'&&cl.dataFim&&cl.dataFim.substring(0,7)===m)c+=parseMoney(cl.mrr);});
+    return c>0?-c:null;
+  });
+
+  const labels=months.map(m=>{const[y,mo]=m.split('-');return new Date(parseInt(y),parseInt(mo)-1,1).toLocaleDateString('pt-BR',{month:'short',year:'2-digit'}).replace('.','');});
+
   const gradPlugin={
-    id:'mrrGradients',
+    id:'mrrEvolGrad',
     beforeRender(chart){
       const{ctx:c,chartArea:ca}=chart;if(!ca)return;
-      const g1=c.createLinearGradient(0,ca.top,0,ca.bottom);
-      const g2=c.createLinearGradient(0,ca.top,0,ca.bottom);
-      if(t==='batman'){
-        g1.addColorStop(0,'rgba(200,168,75,0.22)');g1.addColorStop(1,'rgba(200,168,75,0)');
-        g2.addColorStop(0,'rgba(138,109,53,0.14)');g2.addColorStop(1,'rgba(138,109,53,0)');
-      }else if(t==='dark'){
-        g1.addColorStop(0,'rgba(96,165,250,0.22)');g1.addColorStop(1,'rgba(96,165,250,0)');
-        g2.addColorStop(0,'rgba(251,191,36,0.14)');g2.addColorStop(1,'rgba(251,191,36,0)');
-      }else{
-        g1.addColorStop(0,'rgba(23,57,93,0.18)');g1.addColorStop(1,'rgba(23,57,93,0)');
-        g2.addColorStop(0,'rgba(196,148,23,0.13)');g2.addColorStop(1,'rgba(196,148,23,0)');
-      }
-      chart.data.datasets[0].backgroundColor=g1;
-      chart.data.datasets[1].backgroundColor=g2;
+      const g=c.createLinearGradient(0,ca.top,0,ca.bottom);
+      if(t==='batman'){g.addColorStop(0,'rgba(200,168,75,0.18)');g.addColorStop(1,'rgba(200,168,75,0)');}
+      else if(t==='dark'){g.addColorStop(0,'rgba(96,165,250,0.18)');g.addColorStop(1,'rgba(96,165,250,0)');}
+      else{g.addColorStop(0,'rgba(23,57,93,0.14)');g.addColorStop(1,'rgba(23,57,93,0)');}
+      chart.data.datasets[0].backgroundColor=g;
     }
   };
-  forecastChart=new Chart(canvas,{
-    type:'line',
+
+  mrrEvolutionChart=new Chart(canvas,{
     data:{
-      labels:forecastData.map(m=>m.label),
+      labels,
       datasets:[
-        {label:'Base',data:forecastData.map(m=>m.base),borderColor:l1c,backgroundColor:'transparent',fill:true,tension:0.35,pointBackgroundColor:l1c,pointBorderColor:ct.border,pointBorderWidth:2,pointRadius:4,pointHoverRadius:8,pointHoverBorderWidth:2.5,borderWidth:2.5},
-        {label:'Conservador',data:forecastData.map(m=>m.conservative),borderColor:l2c,backgroundColor:'transparent',fill:true,tension:0.35,pointBackgroundColor:l2c,pointBorderColor:ct.border,pointBorderWidth:2,pointRadius:4,pointHoverRadius:8,pointHoverBorderWidth:2.5,borderWidth:2,borderDash:[6,4]}
+        {type:'line',label:'MRR Total',data:months.map(m=>monthMap[m]||0),borderColor:lc,backgroundColor:'transparent',fill:true,tension:0.35,pointBackgroundColor:lc,pointBorderColor:ct.border,pointBorderWidth:2,pointRadius:4,pointHoverRadius:8,borderWidth:2.5,order:0,yAxisID:'y'},
+        {type:'bar',label:'Novos',data:newMRR,backgroundColor:newC,borderRadius:4,order:1,yAxisID:'y',barPercentage:0.55},
+        {type:'bar',label:'Churn',data:churnMRR,backgroundColor:churnC,borderRadius:4,order:1,yAxisID:'y',barPercentage:0.55}
       ]
     },
     options:{
       responsive:true,maintainAspectRatio:false,
-      onClick:(evt,elements)=>{if(!elements.length)return;openForecastPopup(elements[0].index,elements[0].datasetIndex===0?'base':'conservative');},
       plugins:{
         legend:{position:'top',labels:{font:{family:'Clash Display',size:11.5},color:ct.text,padding:16,usePointStyle:true,pointStyle:'circle',boxWidth:8,boxHeight:8}},
         tooltip:{
-          backgroundColor:ct.tooltip,
-          titleFont:{family:'Clash Display',size:12},
-          bodyFont:{family:'Clash Display',size:12},
-          padding:12,cornerRadius:8,
-          callbacks:{
-            label:(item)=>`  ${item.dataset.label}: ${fmtMoney(item.raw)}/mês`,
-            afterLabel:(item)=>{const d=item.datasetIndex===0?forecastData[item.dataIndex]?.baseList:forecastData[item.dataIndex]?.conservList;return d&&d.length?`  ${d.length} cliente${d.length===1?'':'s'}`:''}
-          }
+          backgroundColor:ct.tooltip,titleFont:{family:'Clash Display',size:12},bodyFont:{family:'Clash Display',size:12},padding:12,cornerRadius:8,
+          callbacks:{label:(item)=>`  ${item.dataset.label}: ${fmtMoney(Math.abs(item.raw||0))}/mês`}
         }
       },
       scales:{
         x:{grid:{color:ct.grid},border:{display:false},ticks:{color:ct.text,font:{family:'Clash Display',size:11.5}}},
-        y:{grid:{color:ct.grid},border:{display:false},ticks:{color:ct.text,font:{family:'Clash Display',size:11.5},callback:(v)=>fmtMoney(v)}}
+        y:{grid:{color:ct.grid},border:{display:false},ticks:{color:ct.text,font:{family:'Clash Display',size:11.5},callback:(v)=>fmtMoney(Math.abs(v))}}
       }
     },
     plugins:[gradPlugin]
   });
 }
 
-function openForecastPopup(monthIdx,scenario){
-  const month=forecastData[monthIdx];if(!month)return;
-  const cls=scenario==='base'?month.baseList:month.conservList;
-  const total=scenario==='base'?month.base:month.conservative;
-  const scenLabel=scenario==='base'?'Projeção base':'Projeção conservadora';
-  const items=cls.map(cl=>{
-    const idx=clients.indexOf(cl);const ci=colorFor(idx);const{liquido}=calcMRR(cl);
-    return'<div class="popup-client-row" onclick="closePopup();openClientView(\''+cl.id+'\')">'
-      +'<div class="avatar" style="background:'+ci.bg+';color:'+ci.txt+'">'+initials(cl.nome)+'</div>'
-      +'<div class="popup-client-info"><div class="popup-client-name">'+cl.nome+'</div>'
-      +'<div class="popup-client-meta">'+cl.nicho+' · '+fmtMoney(liquido)+'/mês</div></div>'
-      +churnBadge(cl.churn)+'</div>';
-  }).join('');
-  document.getElementById('popup-content').innerHTML=
-    '<div class="popup-header">'
-    +'<div><div class="popup-title">'+month.label+' — '+scenLabel+'</div>'
-    +'<div class="popup-sub">MRR projetado: '+fmtMoney(total)+'/mês · '+cls.length+' cliente'+(cls.length===1?'':'s')+'</div></div>'
-    +'<button class="popup-close" onclick="closePopup()">✕</button>'
-    +'</div>'
-    +'<div class="popup-body">'+(items||'<div class="empty-state">Sem clientes.</div>')+'</div>';
-  document.getElementById('popup-overlay').classList.add('show');
+function renderFinancialSection(){
+  const ativos=activeClients();
+  let totalBruto=0,totalCusto=0,totalComissao=0;
+  ativos.forEach(cl=>{const{bruto,custo,comissao}=calcMRR(cl);totalBruto+=bruto;totalCusto+=custo;totalComissao+=comissao;});
+  const totalDed=totalCusto+totalComissao;
+  const margem=totalBruto-totalDed;
+  const pct=totalBruto>0?Math.round(margem/totalBruto*100):0;
+  const kpisEl=document.getElementById('fin-kpis');
+  if(kpisEl){
+    kpisEl.innerHTML=`
+      <div class="fin-kpi"><div class="fin-kpi-val">${fmtMoney(totalBruto)}</div><div class="fin-kpi-lbl">Receita bruta</div></div>
+      <div class="fin-kpi"><div class="fin-kpi-val" style="color:var(--red)">-${fmtMoney(totalDed)}</div><div class="fin-kpi-lbl">Custos + comissões</div></div>
+      <div class="fin-kpi"><div class="fin-kpi-val" style="color:var(--green)">${fmtMoney(margem)}</div><div class="fin-kpi-lbl">Margem bruta</div></div>
+      <div class="fin-kpi"><div class="fin-kpi-val" style="color:${pct>=70?'var(--green)':pct>=50?'var(--amber)':'var(--red)'}">${pct}%</div><div class="fin-kpi-lbl">% margem</div></div>`;
+  }
+  const canvas=document.getElementById('chart-financial');
+  if(!canvas||!ativos.length)return;
+  if(financialChart)financialChart.destroy();
+  const ct=getChartTheme();
+  const t=document.documentElement.getAttribute('data-theme')||'light';
+  const sorted=[...ativos].sort((a,b)=>calcMRR(b).bruto-calcMRR(a).bruto);
+  const liqC=t==='batman'?'rgba(200,168,75,0.85)':t==='dark'?'rgba(96,165,250,0.85)':'rgba(23,57,93,0.85)';
+  const comC=t==='batman'?'rgba(138,109,53,0.75)':t==='dark'?'rgba(251,191,36,0.75)':'rgba(196,148,23,0.75)';
+  const cusC=t==='batman'?'rgba(138,74,58,0.75)':t==='dark'?'rgba(248,113,113,0.75)':'rgba(139,42,46,0.75)';
+  financialChart=new Chart(canvas,{
+    type:'bar',
+    data:{
+      labels:sorted.map(cl=>cl.nome.split(' ')[0]),
+      datasets:[
+        {label:'Líquido',data:sorted.map(cl=>calcMRR(cl).liquido),backgroundColor:liqC,borderRadius:4,stack:'s'},
+        {label:'Comissão',data:sorted.map(cl=>calcMRR(cl).comissao),backgroundColor:comC,borderRadius:0,stack:'s'},
+        {label:'Custo',data:sorted.map(cl=>calcMRR(cl).custo),backgroundColor:cusC,borderRadius:0,stack:'s'}
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      onClick:(evt,els)=>{if(!els.length)return;openClientView(sorted[els[0].index].id);},
+      plugins:{
+        legend:{position:'top',labels:{font:{family:'Clash Display',size:11.5},color:ct.text,padding:14,usePointStyle:true,pointStyle:'circle',boxWidth:8,boxHeight:8}},
+        tooltip:{backgroundColor:ct.tooltip,titleFont:{family:'Clash Display',size:12},bodyFont:{family:'Clash Display',size:12},padding:10,cornerRadius:8,callbacks:{label:(item)=>`  ${item.dataset.label}: ${fmtMoney(item.raw)}`}}
+      },
+      scales:{
+        x:{grid:{color:ct.grid},border:{display:false},ticks:{color:ct.text,font:{family:'Clash Display',size:11.5}},stacked:true},
+        y:{grid:{color:ct.grid},border:{display:false},ticks:{color:ct.text,font:{family:'Clash Display',size:11.5},callback:(v)=>fmtMoney(v)},stacked:true}
+      }
+    }
+  });
+}
+
+function renderChurnSection(){
+  const churned=clients.filter(c=>c.status==='churned');
+  const kpisEl=document.getElementById('churn-kpis');
+  if(!churned.length){
+    if(kpisEl)kpisEl.innerHTML='<div style="font-size:13px;color:var(--text-3);padding:8px 0">Nenhum churn registrado. ✓</div>';
+    const canvas=document.getElementById('chart-churn');
+    if(canvas){const w=canvas.closest('.chart-canvas');if(w)w.style.display='none';}
+    return;
+  }
+  const canvas=document.getElementById('chart-churn');
+  if(canvas){const w=canvas.closest('.chart-canvas');if(w)w.style.display='';}
+  const totalMRRLost=churned.reduce((s,c)=>s+parseMoney(c.mrr),0);
+  const withDates=churned.filter(c=>c.dataInicio&&c.dataFim);
+  const avgDur=withDates.length?Math.round(withDates.reduce((s,c)=>{
+    const ms=((new Date(c.dataFim).getFullYear()-new Date(c.dataInicio).getFullYear())*12)+(new Date(c.dataFim).getMonth()-new Date(c.dataInicio).getMonth());
+    return s+Math.max(1,ms);
+  },0)/withDates.length):null;
+  if(kpisEl){
+    kpisEl.innerHTML=`
+      <div class="fin-kpi"><div class="fin-kpi-val">${churned.length}</div><div class="fin-kpi-lbl">Total churned</div></div>
+      <div class="fin-kpi"><div class="fin-kpi-val" style="color:var(--red)">-${fmtMoney(totalMRRLost)}</div><div class="fin-kpi-lbl">MRR perdido</div></div>
+      <div class="fin-kpi"><div class="fin-kpi-val">${avgDur?avgDur+'m':'—'}</div><div class="fin-kpi-lbl">Duração média</div></div>`;
+  }
+  if(!canvas)return;
+  if(churnChart)churnChart.destroy();
+  const byMonth={};
+  churned.forEach(cl=>{
+    if(!cl.dataFim)return;
+    const k=cl.dataFim.substring(0,7);
+    if(!byMonth[k])byMonth[k]={count:0,mrr:0};
+    byMonth[k].count++;byMonth[k].mrr+=parseMoney(cl.mrr);
+  });
+  const months=Object.keys(byMonth).sort();
+  const labels=months.map(m=>{const[y,mo]=m.split('-');return new Date(parseInt(y),parseInt(mo)-1,1).toLocaleDateString('pt-BR',{month:'short',year:'2-digit'}).replace('.','');});
+  const ct=getChartTheme();
+  const t=document.documentElement.getAttribute('data-theme')||'light';
+  const barC=t==='batman'?'rgba(138,74,58,0.8)':t==='dark'?'rgba(248,113,113,0.8)':'rgba(139,42,46,0.8)';
+  churnChart=new Chart(canvas,{
+    type:'bar',
+    data:{labels,datasets:[{label:'Churns',data:months.map(m=>byMonth[m].count),backgroundColor:barC,borderRadius:5}]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:ct.tooltip,titleFont:{family:'Clash Display',size:12},bodyFont:{family:'Clash Display',size:12},padding:10,cornerRadius:8,
+          callbacks:{label:(item)=>`  ${item.raw} cliente${item.raw===1?'':'s'} · ${fmtMoney(byMonth[months[item.dataIndex]].mrr)} perdidos`}
+        }
+      },
+      scales:{
+        x:{grid:{color:ct.grid},border:{display:false},ticks:{color:ct.text,font:{family:'Clash Display',size:11.5}}},
+        y:{grid:{color:ct.grid},border:{display:false},ticks:{color:ct.text,font:{family:'Clash Display',size:11.5},stepSize:1}}
+      }
+    }
+  });
+}
+
+function renderEngagementHeatmap(){
+  const el=document.getElementById('engagement-heatmap');if(!el)return;
+  const ativos=activeClients();
+  if(!ativos.length){el.innerHTML='<div class="empty-state">Sem clientes ativos.</div>';return;}
+  const now=new Date();
+  const months=[];
+  for(let i=5;i>=0;i--){
+    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    months.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'));
+  }
+  const labels=months.map(m=>{const[y,mo]=m.split('-');return new Date(parseInt(y),parseInt(mo)-1,1).toLocaleDateString('pt-BR',{month:'short'}).replace('.','');});
+  const t=document.documentElement.getAttribute('data-theme')||'light';
+  const baseRGB=t==='batman'?'200,168,75':t==='dark'?'96,165,250':'23,57,93';
+  const data=ativos.map(cl=>({cl,counts:months.map(m=>reunioes.filter(r=>r.clienteId===cl.id&&r.data&&r.data.substring(0,7)===m).length)}));
+  data.sort((a,b)=>b.counts.reduce((s,c)=>s+c,0)-a.counts.reduce((s,c)=>s+c,0));
+  const max=Math.max(...data.flatMap(d=>d.counts),1);
+  const t2=document.documentElement.getAttribute('data-theme')||'light';
+  const surfRGB=t2==='batman'?'12,12,16':t2==='dark'?'13,17,23':'243,243,238';
+  let html=`<div class="heatmap-wrap"><div class="heatmap-header"><div class="heatmap-row-label"></div>${labels.map(l=>`<div class="heatmap-col-label">${l}</div>`).join('')}</div>`;
+  data.forEach(({cl,counts})=>{
+    html+=`<div class="heatmap-row" onclick="openClientView('${cl.id}')"><div class="heatmap-row-label" title="${cl.nome}">${cl.nome.split(' ')[0]}</div>`;
+    counts.forEach(c=>{
+      const alpha=c===0?0:0.12+Math.min(1,c/max)*0.75;
+      const bg=c===0?`rgb(${surfRGB})`:`rgba(${baseRGB},${alpha.toFixed(2)})`;
+      html+=`<div class="heatmap-cell" title="${c} reunião${c===1?'':'ões'}" style="background:${bg}">${c||''}</div>`;
+    });
+    html+='</div>';
+  });
+  html+='</div>';
+  el.innerHTML=html;
 }
 
 function renderCohortTable(){

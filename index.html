@@ -4,13 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Selenior CS</title>
-<link rel="icon" type="image/png" href="assets/favicon.png?v=2.16.0">
+<link rel="icon" type="image/png" href="assets/favicon.png?v=2.17.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 <link rel="preconnect" href="https://api.fontshare.com">
 <link href="https://api.fontshare.com/v2/css?f[]=clash-display@400,500,600,700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css?v=2.16.0">
+<link rel="stylesheet" href="css/styles.css?v=2.17.0">
 <script>(function(){var t=localStorage.getItem('selenior_theme');if(t&&t!=='light')document.documentElement.setAttribute('data-theme',t);})();</script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.js" defer></script>
 </head>
@@ -19,7 +19,7 @@
 <!-- LOGIN -->
 <div id="login-screen">
   <div class="login-card">
-    <img src="assets/logo-dark.png?v=2.16.0" alt="Selenior" class="login-brand">
+    <img src="assets/logo-dark.png?v=2.17.0" alt="Selenior" class="login-brand">
     <div class="login-tag">CS Dashboard</div>
     <h2>Bem-vindo</h2>
     <p>Entre com sua senha. Admin tem permissão de edição; visualização é somente leitura.</p>
@@ -33,7 +33,7 @@
 <div id="app">
   <aside class="sidebar">
     <div class="sidebar-brand">
-      <img src="assets/logo-dark.png?v=2.16.0" alt="Selenior" class="sidebar-logo">
+      <img src="assets/logo-dark.png?v=2.17.0" alt="Selenior" class="sidebar-logo">
       <span class="batman-brand">🦇</span>
       <span class="sidebar-tag">CS</span>
     </div>
@@ -114,18 +114,36 @@
       <div class="charts-grid">
         <div class="chart-card">
           <div class="chart-title">Distribuição por fase</div>
+          <div class="chart-sub">Clique em um segmento para filtrar a lista de clientes.</div>
           <div class="chart-canvas"><canvas id="chart-phase"></canvas></div>
         </div>
         <div class="chart-card">
-          <div class="chart-title">Previsão de MRR — próximos 7 meses</div>
-          <div class="chart-sub">Clique em qualquer ponto para ver os clientes do período. Cenário conservador remove clientes churn alto no vencimento do contrato.</div>
-          <div class="chart-canvas"><canvas id="chart-mrr-forecast"></canvas></div>
+          <div class="chart-title">Evolução de MRR</div>
+          <div class="chart-sub">MRR total por mês (histórico real) + variação por novos e churns.</div>
+          <div class="chart-canvas"><canvas id="chart-mrr-evolution"></canvas></div>
         </div>
       </div>
       <div class="chart-card cohort-card">
         <div class="chart-title">Safra de clientes — por mês de entrada</div>
         <div class="chart-sub">Mostra como cada coorte está distribuída entre as fases hoje. Vermelho indica churn.</div>
         <div id="cohort-table-wrap"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Financeiro</div>
+        <div class="chart-sub">Margem bruta da operação e composição de receita por cliente. Clique na barra para abrir o cliente.</div>
+        <div class="fin-kpi-row" id="fin-kpis"></div>
+        <div class="chart-canvas" style="height:240px"><canvas id="chart-financial"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Análise de churn</div>
+        <div class="chart-sub">Volume de saídas por mês e métricas acumuladas.</div>
+        <div class="fin-kpi-row" id="churn-kpis"></div>
+        <div class="chart-canvas"><canvas id="chart-churn"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Engajamento — reuniões por cliente</div>
+        <div class="chart-sub">Frequência de reuniões nos últimos 6 meses. Clique no cliente para abrir.</div>
+        <div id="engagement-heatmap"></div>
       </div>
       <div class="chart-card">
         <div class="chart-title">Sinais de alerta</div>
@@ -216,6 +234,7 @@
       <div class="ctab" onclick="showClientTab('metas',this)">Metas & Objetivos</div>
       <div class="ctab" onclick="showClientTab('actions',this)">Action items</div>
       <div class="ctab" onclick="showClientTab('documentos',this)">Documentos</div>
+      <div class="ctab" onclick="showClientTab('historico',this)">Histórico MRR</div>
     </div>
     <div class="client-content">
       <div id="ctab-overview"></div>
@@ -223,6 +242,7 @@
       <div id="ctab-metas" style="display:none"></div>
       <div id="ctab-actions" style="display:none"></div>
       <div id="ctab-documentos" style="display:none"></div>
+      <div id="ctab-historico" style="display:none"></div>
     </div>
   </div>
   </div>
@@ -401,6 +421,24 @@
   </div>
 </div>
 
+<!-- MODAL HISTÓRICO MRR -->
+<div class="modal-overlay" id="modal-hist-mrr" onclick="if(event.target===this)closeHistMRRModal()">
+  <div class="modal-box" style="max-width:380px">
+    <div class="modal-header">
+      <div class="modal-title" id="hm-title">Novo registro de MRR</div>
+      <button class="modal-close" onclick="closeHistMRRModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label>Mês</label><input type="month" id="hm-mes" class="input"></div>
+      <div class="form-group"><label>MRR bruto (R$)</label><input type="number" id="hm-mrr" class="input" placeholder="0" min="0" step="0.01"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeHistMRRModal()">Cancelar</button>
+      <button class="btn-save" onclick="saveHistMRR()">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <div id="batman-overlay">
   <div class="bat-signal">🦇</div>
   <div class="batman-mode-text">BATMAN MODE</div>
@@ -409,11 +447,11 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="js/config.js?v=2.16.0" defer></script>
-<script src="js/api.js?v=2.16.0" defer></script>
-<script src="js/views.js?v=2.16.0" defer></script>
-<script src="js/dashboard.js?v=2.16.0" defer></script>
-<script src="js/modals.js?v=2.16.0" defer></script>
-<script src="js/auth.js?v=2.16.0" defer></script>
+<script src="js/config.js?v=2.17.0" defer></script>
+<script src="js/api.js?v=2.17.0" defer></script>
+<script src="js/views.js?v=2.17.0" defer></script>
+<script src="js/dashboard.js?v=2.17.0" defer></script>
+<script src="js/modals.js?v=2.17.0" defer></script>
+<script src="js/auth.js?v=2.17.0" defer></script>
 </body>
 </html>

@@ -311,3 +311,40 @@ async function deleteDoc(id){
   documentos=documentos.filter(x=>x.id!==id);renderClientView(d.clienteId);
   try{await apiPost_({action:'deleteDoc',id});showToast('Removido.');}catch(e){showToast('Erro ao remover',true);}
 }
+
+// ── MODAL HISTÓRICO MRR ──
+function openHistMRRModal(clienteId,existingId=null){
+  const existing=existingId?historicoMRR.find(h=>h.id===existingId):null;
+  editingHistMRRId=existingId||null;
+  editingHistMRRClienteId=clienteId;
+  document.getElementById('hm-title').textContent=existing?'Editar registro':'Novo registro de MRR';
+  document.getElementById('hm-mes').value=existing?existing.mes:new Date().toISOString().substring(0,7);
+  document.getElementById('hm-mrr').value=existing?existing.mrr:'';
+  document.getElementById('modal-hist-mrr').classList.add('open');
+}
+function closeHistMRRModal(){editingHistMRRId=null;editingHistMRRClienteId=null;document.getElementById('modal-hist-mrr').classList.remove('open');}
+
+async function saveHistMRR(){
+  const mes=document.getElementById('hm-mes').value.trim();
+  const mrr=parseFloat(document.getElementById('hm-mrr').value)||0;
+  if(!mes||!mrr){showToast('Preencha mês e valor.',true);return;}
+  const h={id:editingHistMRRId||String(Date.now()),clienteId:editingHistMRRClienteId,mes,mrr};
+  if(editingHistMRRId){const i=historicoMRR.findIndex(x=>x.id===editingHistMRRId);if(i>=0)historicoMRR[i]=h;else historicoMRR.push(h);}
+  else historicoMRR.push(h);
+  closeHistMRRModal();
+  const cl=clients.find(c=>c.id===h.clienteId);
+  if(currentClientId===h.clienteId&&cl)renderMRRHistory(cl);
+  if(typeof renderDashboard==='function')renderDashboard();
+  setSyncStatus('syncing','Salvando...');
+  try{await upsertRow('HistoricoMRR',histMRRToRow(h));setSyncStatus('ok','Salvo');showToast('Registro salvo.');}
+  catch(e){setSyncStatus('error','Erro');showToast('Erro ao salvar',true);}
+}
+
+async function deleteHistMRR(id){
+  const h=historicoMRR.find(x=>x.id===id);if(!h)return;
+  historicoMRR=historicoMRR.filter(x=>x.id!==id);
+  const cl=clients.find(c=>c.id===h.clienteId);
+  if(currentClientId===h.clienteId&&cl)renderMRRHistory(cl);
+  if(typeof renderDashboard==='function')renderDashboard();
+  try{await deleteRow('HistoricoMRR',id);showToast('Removido.');}catch(e){showToast('Erro ao remover',true);}
+}

@@ -13,6 +13,8 @@ function docIcon(tipo){return({briefing:'📋',contrato:'📑',qbr:'📊',aprese
 function docTipoLabel(tipo){return({briefing:'Briefings',contrato:'Contratos',qbr:'QBR / Relatórios',apresentacao:'Apresentações',gravacao:'Gravações',outro:'Outros'})[tipo]||'Outros';}
 function formatBytes(n){if(!n)return'';if(n<1024)return n+' B';if(n<1024*1024)return Math.round(n/1024)+' KB';return(n/(1024*1024)).toFixed(1)+' MB';}
 
+let mrrHistChart=null;
+
 function calcMesAtual(dataInicio){
   if(!dataInicio) return 1;
   const inicio=new Date(dataInicio);const hoje=new Date();
@@ -63,7 +65,7 @@ function healthLabel(score){
 function openClientViewTab(id,tab){
   openClientView(id);
   setTimeout(()=>{
-    const tabMap={overview:0,reunioes:1,metas:2,actions:3,documentos:4};
+    const tabMap={overview:0,reunioes:1,metas:2,actions:3,documentos:4,historico:5};
     const tabs=document.querySelectorAll('.ctab');
     const btn=tabs[tabMap[tab]];
     if(btn) showClientTab(tab,btn);
@@ -209,9 +211,10 @@ function goBack(){
 function showClientTab(name,btn){
   document.querySelectorAll('.ctab').forEach(t=>t.classList.remove('active'));
   btn.classList.add('active');
-  ['overview','reunioes','metas','actions','documentos'].forEach(t=>document.getElementById('ctab-'+t).style.display='none');
+  ['overview','reunioes','metas','actions','documentos','historico'].forEach(t=>document.getElementById('ctab-'+t).style.display='none');
   document.getElementById('ctab-'+name).style.display='block';
   window.scrollTo({top:0,behavior:'smooth'});
+  if(name==='historico'&&currentClientId)renderMRRHistory(clients.find(c=>c.id===currentClientId));
 }
 
 function renderClientView(id){
@@ -228,6 +231,8 @@ function renderClientView(id){
   const acts=document.getElementById('cv-actions');
   acts.innerHTML=mode==='admin'?`<button class="topbar-btn" onclick="openClientModal('${cl.id}')">Editar</button><button class="topbar-btn" style="color:var(--red)" onclick="deleteClient('${cl.id}')">Remover</button>`:'';
   renderOverview(cl);renderReunioes(cl);renderMetas(cl);renderActionItems(cl);renderDocumentos(cl);
+  const histEl=document.getElementById('ctab-historico');
+  if(histEl&&histEl.style.display!=='none')renderMRRHistory(cl);
 }
 
 function renderOverview(cl){
@@ -489,4 +494,70 @@ function renderDocumentos(cl){
     });
   });
   document.getElementById('ctab-documentos').innerHTML=html;
+}
+
+// ── HISTÓRICO MRR (tab no cliente) ──
+function renderMRRHistory(cl){
+  if(!cl)return;
+  const container=document.getElementById('ctab-historico');if(!container)return;
+  const clHist=historicoMRR.filter(h=>h.clienteId===cl.id).sort((a,b)=>a.mes.localeCompare(b.mes));
+  const addBtn=mode==='admin'?`<button class="edit-btn" style="margin-bottom:16px" onclick="openHistMRRModal('${cl.id}')">+ Adicionar registro</button>`:'';
+  if(!clHist.length){
+    container.innerHTML=`${addBtn}<div class="empty-state"><div class="empty-icon">📈</div><div class="empty-title">Sem histórico de MRR</div><div class="empty-sub">Registre o MRR mensal deste cliente para visualizar a evolução da receita ao longo do tempo.</div></div>`;
+    return;
+  }
+  const ct=getChartTheme();
+  const t=document.documentElement.getAttribute('data-theme')||'light';
+  const lc=t==='batman'?'#C8A84B':t==='dark'?'#60A5FA':'#17395D';
+  const labels=clHist.map(h=>{const[y,mo]=h.mes.split('-');return new Date(parseInt(y),parseInt(mo)-1,1).toLocaleDateString('pt-BR',{month:'short',year:'2-digit'}).replace('.','');});
+  const data=clHist.map(h=>h.mrr);
+  const min=Math.min(...data);const max=Math.max(...data);
+  const delta=max-min;const pct=min>0?Math.round(delta/min*100):0;
+  const trend=data.length>1?data[data.length-1]-data[data.length-2]:0;
+  const tableRows=clHist.map(h=>`<div class="hist-mrr-row">
+    <span class="hist-mrr-mes">${h.mes}</span>
+    <span class="hist-mrr-val">${fmtMoney(h.mrr)}/mês</span>
+    ${mode==='admin'?`<button class="hist-mrr-edit" onclick="openHistMRRModal('${cl.id}','${h.id}')" title="Editar">✎</button><button class="hist-mrr-rm" onclick="deleteHistMRR('${h.id}')" title="Remover">✕</button>`:''}
+  </div>`).join('');
+  container.innerHTML=`
+    ${addBtn}
+    <div class="overview-grid">
+      <div class="mini-card">
+        <div class="mini-title">Evolução de MRR</div>
+        <div style="position:relative;height:200px"><canvas id="chart-mrr-client"></canvas></div>
+        ${data.length>1?`<div style="margin-top:10px;font-size:12px;color:var(--text-3)">Variação: <strong style="color:${trend>=0?'var(--green)':'var(--red)'}">${trend>=0?'+':''}${fmtMoney(trend)}</strong> no último mês · pico ${fmtMoney(max)}</div>`:''}
+      </div>
+      <div class="mini-card">
+        <div class="mini-title">Registros mensais</div>
+        <div id="hist-mrr-table">${tableRows}</div>
+      </div>
+    </div>`;
+  const gradPlugin={
+    id:'clientMRRGrad',
+    beforeRender(chart){
+      const{ctx:c,chartArea:ca}=chart;if(!ca)return;
+      const g=c.createLinearGradient(0,ca.top,0,ca.bottom);
+      if(t==='batman'){g.addColorStop(0,'rgba(200,168,75,0.2)');g.addColorStop(1,'rgba(200,168,75,0)');}
+      else if(t==='dark'){g.addColorStop(0,'rgba(96,165,250,0.2)');g.addColorStop(1,'rgba(96,165,250,0)');}
+      else{g.addColorStop(0,'rgba(23,57,93,0.15)');g.addColorStop(1,'rgba(23,57,93,0)');}
+      chart.data.datasets[0].backgroundColor=g;
+    }
+  };
+  if(mrrHistChart)mrrHistChart.destroy();
+  mrrHistChart=new Chart(document.getElementById('chart-mrr-client'),{
+    type:'line',
+    data:{labels,datasets:[{label:'MRR',data,borderColor:lc,backgroundColor:'transparent',fill:true,tension:0.35,pointBackgroundColor:lc,pointBorderColor:ct.border,pointBorderWidth:2,pointRadius:4,pointHoverRadius:8,borderWidth:2.5}]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{backgroundColor:ct.tooltip,titleFont:{family:'Clash Display',size:12},bodyFont:{family:'Clash Display',size:12},padding:10,cornerRadius:8,callbacks:{label:(item)=>`  MRR: ${fmtMoney(item.raw)}/mês`}}
+      },
+      scales:{
+        x:{grid:{color:ct.grid},border:{display:false},ticks:{color:ct.text,font:{family:'Clash Display',size:11}}},
+        y:{grid:{color:ct.grid},border:{display:false},ticks:{color:ct.text,font:{family:'Clash Display',size:11},callback:(v)=>fmtMoney(v)}}
+      }
+    },
+    plugins:[gradPlugin]
+  });
 }
